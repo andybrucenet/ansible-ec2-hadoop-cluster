@@ -1,3 +1,4 @@
+#/bin/sh
 ###
 #
 # ansible-ec2-hadoop-cluster
@@ -11,288 +12,264 @@
 #
 ###
 
-# read command line options
-TEMP=`getopt -o a::s::n::k:: --long awsaccesskey::,awsecretkey::,clustername::,pemkey:: -n start-here.sh -- "$@"`
-eval set -- "$TEMP"
+# local variables
+SCRIPT=`basename ${BASH_SOURCE[0]}`
+g_local_ansible="~/.ansible"
+g_local_inventory="$g_local_ansible/local_inventory/ansible-ec2-hadoop-cluster"
+g_rc=0
 
-while true ; do
-case "$1" in
--a|--awsaccesskey)
-case "$2" in
-"") AWS_ACCESS_KEY_ID='enter aws access key' ;  shift 2 ;;
-*) AWS_ACCESS_KEY_ID=$2 ; shift 2 ;;
-esac ;;
--s|--awsecretkey)
-case "$2" in
-"") AWS_SECRET_ACCESS_KEY='enter aws secret key' ;  shift 2 ;;
-*) AWS_SECRET_ACCESS_KEY=$2 ; shift 2 ;;
-esac ;;
--n|--clustername)
-case "$2" in
-"") HDPCLUSTERNAME='enter clustername' ;  shift 2 ;;
-*) HDPCLUSTERNAME=$2 ; shift 2 ;;
-esac ;;
--k|--pemkey)
-case "$2" in
-"") PEMKEY='enter pem key' ;  shift 2 ;;
-*) PEMKEY=$2 ; shift 2 ;;
-esac ;;
---) shift ; break ;;
-*) echo "internal error" ; exit 1 ;;
-esac
-done
+# little function to get user input
+function read_entry {
+  local l_prompt="$1"
+  local l_read_opts="$2"
+  local l_value="$3"
+  local l_default="$4"
+
+  # anything to do?
+  [ x"$l_value" != x ] && echo "$l_value" && return 0
+
+  # display prompt (with optional default)
+  local l_prompt_display="$l_prompt"
+  [ x"$l_default" != x ] && l_prompt_display="$l_prompt [$l_default]"
+
+  # read the value and get the result
+  eval read -p "'$l_prompt_display: '" $l_read_opts VAR
+  local l_rc=$?
+
+  # interpret the result - permit default value
+  [ $l_rc -ne 0 ] && return $l_rc
+  [ x"$VAR" = x ] && [ x"$l_default" != x ] && VAR="$l_default"
+  [ x"$VAR" = x ] && return 1
+  echo $VAR
+  return 0
+}
 
 # clean up inventory directories
-rm -rf ~/.ansible/local_inventory
+rm -rf "$g_local_inventory"
 
-# enter AWS_ACCESS_KEY_ID
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---inputbox "Enter AWS_ACCESS_KEY" 13 49 $AWS_ACCESS_KEY_ID 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-AWS_ACCESS_KEY_ID=$(cat dialogtmp)
+# read command line options
+#set -x
+#echo "\@='$@'"
+#TEMP=`getopt -o a::s::n::k::e::m::l::z::c::h --long awsaccesskey::,awssecretkey::,clustername::,pemkey::,edgeinstancetype::,masterinstancetype::,slaveinstancetype::,slavevolumesize::,slavecount::,help -n start-here.sh -- "$@"`
+#TEMP=`getopt -o a:: -n 'start-here.sh' -- "$@"`
+#getopt -o a:: -n 'start-here.sh' -- "$@"
+#eval set -- "$TEMP"
+#echo "TEMP='$TEMP'"
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::c::h FLAG; do
+  case "$FLAG" in
+    a) AWS_ACCESS_KEY_ID="$OPTARG" ;;
+    s) AWS_SECRET_ACCESS_KEY="$OPTARG" ;;
+    r) AWS_REGION="$OPTARG" ;;
+    w) AWS_REGION_AZ="$OPTARG" ;;
+    v) AWS_VPC_ID="$OPTARG" ;;
+    u) AWS_SUBNET_RANGE="$OPTARG" ;;
+    g) AWS_IGW_ID="$OPTARG" ;;
+    i) AWS_AMI_ID="$OPTARG" ;;
+    o) AWS_SSH_LOGIN="$OPTARG" ;;
+    x) AWS_PREFIX="$OPTARG" ;;
+    p) PEMKEYNAME="$OPTARG" ;;
+    k) PEMKEY="$OPTARG" ;;
+    n) HDPCLUSTERNAME="$OPTARG" ;;
+    d) HDPDOMAINNAME="$OPTARG" ;;
+    e) EDGEINSTANCETYPE="$OPTARG" ;;
+    m) MASTERINSTANCETYPE="$OPTARG" ;;
+    l) SLAVEINSTANCETYPE="$OPTARG" ;;
+    z) SLAVEVOLUMESIZE="$OPTARG" ;;
+    c) SLAVECOUNT="$OPTARG" ;;
+    h)
+      cat << EOF
+Usage:
+  $SCRIPT [options]
+
+Options:
+  -a - AWS Access Key
+  -s - AWS Secret Key
+  -r - AWS Region
+  -w - AWS Region Availability Zone (AZ)
+  -v - AWS Virtual Private Cloud (VPC) ID
+  -u - AWS Subnet Range
+  -g - AWS Internet Gateway (IGW) ID
+  -i - AWS Amazon Machine Image (AMI) ID
+  -o - AWS SSH Login name (e.g. 'centos' or 'ec2-user')
+  -x - AWS Prefix (prepended to tag values)
+  -p - AWS keypair name to use to access AWS
+  -k - Private key file to use to access AWS
+  -n - Name to use for the cluster
+  -d - Domain Name to use for the cluster components
+  -e - EC2 instance type for EDGE node
+  -m - EC2 instance type for MASTER node
+  -l - EC2 instance type for SLAVE node(s)
+  -z - EC2 volume size (GB) to attach to each SLAVE node
+  -c - Number of EC2 SLAVE node(s)
+EOF
+      exit 0;;
+    *) echo "Invalid option '$FLAG'" ; exit 1 ;;
+  esac
+done
+
+# enter values
+AWS_REGION=$(read_entry 'Enter AWS_REGION' '' "$AWS_REGION" 'us-west-2')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_REGION_AZ=$(read_entry 'Enter AWS_REGION_AZ' '' "$AWS_REGION_AZ" 'us-west-2b')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_ACCESS_KEY_ID=$(read_entry 'Enter AWS_ACCESS_KEY_ID' '' "$AWS_ACCESS_KEY_ID")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_SECRET_ACCESS_KEY=$(read_entry 'Enter AWS_SECRET_ACCESS_KEY' '-s' "$AWS_SECRET_ACCESS_KEY")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_VPC_ID=$(read_entry 'Enter AWS_VPC_ID' '' "$AWS_VPC_ID" 'vpc-69832d0e')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_SUBNET_RANGE=$(read_entry 'Enter AWS_SUBNET_RANGE' '' "$AWS_SUBNET_RANGE" '172.20.242.16/28')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_IGW_ID=$(read_entry 'Enter AWS_IGW_ID' '' "$AWS_IGW_ID" 'igw-35106e51')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_AMI_ID=$(read_entry 'Enter AWS_AMI_ID' '' "$AWS_AMI_ID" 'ami-d2c924b2')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_SSH_LOGIN=$(read_entry 'Enter AWS_SSH_LOGIN' '' "$AWS_SSH_LOGIN" 'centos')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+AWS_PREFIX=$(read_entry 'Enter AWS_PREFIX' '' "$AWS_PREFIX" 'centos')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+HDPCLUSTERNAME=$(read_entry 'Enter HDP Cluster Name' '' "$HDPCLUSTERNAME")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+HDPDOMAINNAME=$(read_entry 'Enter HDP Cluster Domain Name' '' "$HDPDOMAINNAME")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+PEMKEYNAME=$(read_entry 'Enter AWS Keypair Name Name' '' "$PEMKEYNAME")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
+PEMKEY=$(read_entry 'Enter PEMKEY' '' "$PEMKEY" "$HOME/.ssh/id_rsa")
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+[ ! -s "$PEMKEY" ] && echo "PEMKEY '$PEMKEY' does not exist or has zero size" && exit 2
+g_pemkey_perms=$(stat --format '%a' "$PEMKEY")
+if echo "$g_pemkey_perms" | grep --quiet -e '^[46]\([1-9].\|.[1-9]\)'; then
+  echo "PEMKEY '$PEMKEY' has invalid permissions '$g_pemkey_perms'"
+  exit 1
 fi
 
-# enter AWS_SECRET_ACCESS_KEY
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---inputbox "Enter AWS_SECRET_KEY" 13 49 $AWS_SECRET_ACCESS_KEY 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-AWS_SECRET_ACCESS_KEY=$(cat dialogtmp)
-fi
+EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 'm3.medium')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
 
-# enter HDPCLUSTERNAME
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---inputbox "Enter CLUSTER NAME" 13 49 $HDPCLUSTERNAME 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-HDPCLUSTERNAME=$(cat dialogtmp)
-fi
+MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCETYPE" 'm3.large')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
 
-# enter PEMKEY
+SLAVEINSTANCETYPE=$(read_entry 'Enter SLAVE Instance Type' '' "$SLAVEINSTANCETYPE" 'm3.large')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
 
-# check if PEMKEY exists in home directory
+SLAVEVOLUMESIZE=$(read_entry 'Enter SLAVE Volume Size (GB)' '' "$SLAVEVOLUMESIZE" '300')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
 
-PEMFILE=$(dialog --stdout --no-lines --title "Select PEM File, Press [SPACE] and then [OK]" --fselect $HOME/$PEMKEY.pem 14 48)
-if [ -z "$PEMFILE" ]
-then
-echo "no file selected"
-fi
-
-# get Edge node instance type
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---radiolist "Select Edge Node Instance Type:" 13 49 5 \
- 1 "t1.micro" off \
- 2 "m3.medium" off \
- 3 "m3.large" on \
- 4 "m3.xlarge" off \
- 5 "m3.2xlarge" off 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-SEL=$(cat dialogtmp)
-fi
-
-case $SEL in
-"1")
-EDGENODEINSTTYPE="t1.micro"
-;;
-"2")
-EDGENODEINSTTYPE="m3.medium"
-;;
-"3")
-EDGENODEINSTTYPE="m3.large"
-;;
-"4")
-EDGENODEINSTTYPE="m3.xlarge"
-;;
-"5")
-EDGENODEINSTTYPE="m3.2xlarge"
-;;
-esac
-
-# get Master node instance type 
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---radiolist "Select Master Node Instance Type:" 13 49 5 \
- 1 "t1.micro" off \
- 2 "m3.medium" off \
- 3 "m3.large" on \
- 4 "m3.xlarge" off \
- 5 "m3.2xlarge" off 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-SEL=$(cat dialogtmp)
-fi
-
-case $SEL in
-"1")
-MASTERNODEINSTTYPE="t1.micro"
-;;
-"2")
-MASTERNODEINSTTYPE="m3.medium"
-;;
-"3")
-MASTERNODEINSTTYPE="m3.large"
-;;
-"4")
-MASTERNODEINSTTYPE="m3.xlarge"
-;;
-"5")
-MASTERNODEINSTTYPE="m3.2xlarge"
-;;
-esac
-
-# get Slave node instance type
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---radiolist "Select Slave Node Instance Type:" 13 49 5 \
- 1 "t1.micro" off \
- 2 "m3.medium" off \
- 3 "m3.large" on \
- 4 "m3.xlarge" off \
- 5 "m3.2xlarge" off 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-SEL=$(cat dialogtmp)
-fi
-
-case $SEL in
-"1")
-SLAVENODEINSTTYPE="t1.micro"
-;;
-"2")
-SLAVENODEINSTTYPE="m3.medium"
-;;
-"3")
-SLAVENODEINSTTYPE="m3.large"
-;;
-"4")
-SLAVENODEINSTTYPE="m3.xlarge"
-;;
-"5")
-SLAVENODEINSTTYPE="m3.2xlarge"
-;;
-esac
-
-# get Slave node volume size
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---inputbox "Enter Slave Node Volume Size (GB)" 13 49 "300" 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-SLAVENODEVOLSIZE=$(cat dialogtmp)
-fi
-
-# get Number of Nodes
-rm -f dialogtmp
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---title "Menu" \
---ok-label "Select" \
---clear \
---cancel-label "Exit" \
---inputbox "Enter Number of Task Nodes" 13 49 "3" 2>dialogtmp
-if [ "$?" != "0" ]
-then
-exit
-else
-NONODES=$(cat dialogtmp)
-fi
+SLAVECOUNT=$(read_entry 'Enter SLAVE Node Count' '' "$SLAVECOUNT" '2')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
 
 # confirm
 CONFTEXT="You are about to deploy a new cluster with the following properties:"
-CONFTEXT="$CONFTEXT\n\nCLUSTERNAME=$HDPCLUSTERNAME"
-CONFTEXT="$CONFTEXT\nPEMFILE=$PEMFILE"
-CONFTEXT="$CONFTEXT\nEDGENODEINSTTYPE=$EDGENODEINSTTYPE"
-CONFTEXT="$CONFTEXT\nMASTERNODEINSTTYPE=$MASTERNODEINSTTYPE"
-CONFTEXT="$CONFTEXT\nSLAVENODEINSTTYPE=$SLAVENODEINSTTYPE"
-CONFTEXT="$CONFTEXT\nSLAVENODEVOLSIZE=$SLAVENODEVOLSIZE"
-CONFTEXT="$CONFTEXT\nNUMBER OF NODES=$NONODES"
-CONFTEXT="$CONFTEXT\n\nPress [OK] to continue or [ESC] to cancel"
+CONFTEXT="$CONFTEXT\n\nAWS_REGION=$AWS_REGION"
+CONFTEXT="$CONFTEXT\nAWS_REGION_AZ=$AWS_REGION_AZ"
+CONFTEXT="$CONFTEXT\nAWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+CONFTEXT="$CONFTEXT\nAWS_SECRET_ACCESS_KEY=*****"
+CONFTEXT="$CONFTEXT\nAWS_VPC_ID=$AWS_VPC_ID"
+CONFTEXT="$CONFTEXT\nAWS_SUBNET_RANGE=$AWS_SUBNET_RANGE"
+CONFTEXT="$CONFTEXT\nAWS_IGW_ID=$AWS_IGW_ID"
+CONFTEXT="$CONFTEXT\nAWS_AMI_ID=$AWS_AMI_ID"
+CONFTEXT="$CONFTEXT\nAWS_SSH_LOGIN=$AWS_SSH_LOGIN"
+CONFTEXT="$CONFTEXT\nAWS_PREFIX=$AWS_PREFIX"
+CONFTEXT="$CONFTEXT\nHDP Cluster Name=$HDPCLUSTERNAME"
+CONFTEXT="$CONFTEXT\nHDP Cluster Domain Name=$HDPDOMAINNAME"
+CONFTEXT="$CONFTEXT\nPEMKEYNAME=$PEMKEYNAME"
+CONFTEXT="$CONFTEXT\nPEMKEY=$PEMKEY"
+CONFTEXT="$CONFTEXT\nEDGE Instance Type=$EDGEINSTANCETYPE"
+CONFTEXT="$CONFTEXT\nMASTER Instance Type=$MASTERINSTANCETYPE"
+CONFTEXT="$CONFTEXT\nSLAVE Instance Type=$SLAVEINSTANCETYPE"
+CONFTEXT="$CONFTEXT\nSLAVE Volume Size=$SLAVEVOLUMESIZE"
+CONFTEXT="$CONFTEXT\nSLAVE Node Count=$SLAVECOUNT"
+CONFTEXT="$CONFTEXT\n\nPress [OK] to continue or [Ctrl+C] to cancel"
+echo -n -e "$CONFTEXT"
+read OK_PROMPT
+g_rc=$?
+echo ''
+[ $g_rc -ne 0 ] && exit $g_rc
 
-dialog \
---backtitle "Deploy HDP Cluster in AWS EC2" --no-lines \
---msgbox "$CONFTEXT" 18 49
-if [ "$?" != "0" ]
-then
-clear
-echo "Operation cancelled"
-exit
-else
-clear
+# sudo flags (see http://docs.ansible.com/ansible/intro_configuration.html#sudo-flags)
+l_ansible_sudo_flags='-H -S'
+
 # create instances
-AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID  \
+echo "Create instances..."
+echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
+AWS_REGION=$AWS_REGION \
+AWS_REGION_AZ=$AWS_REGION_AZ \
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+AWS_VPC_ID=$AWS_VPC_ID \
+AWS_SUBNET_RANGE=$AWS_SUBNET_RANGE \
+AWS_IGW_ID=$AWS_IGW_ID \
+AWS_AMI_ID=$AWS_AMI_ID \
+AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
+AWS_PREFIX=$AWS_PREFIX \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
+HDPDOMAINNAME=$HDPDOMAINNAME \
+PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
-EDGENODETYPE=$EDGENODEINSTTYPE \
-MASTERNODETYPE=$MASTERNODEINSTTYPE \
-SLAVENODETYPE=$SLAVENODEINSTTYPE \
-NUMNODES=$NONODES \
-EBSVOLSIZE=$SLAVENODEVOLSIZE \
+EDGENODETYPE=$EDGEINSTANCETYPE \
+MASTERNODETYPE=$MASTERINSTANCETYPE \
+SLAVENODETYPE=$SLAVEINSTANCETYPE \
+NUMNODES=$SLAVECOUNT \
+EBSVOLSIZE=$SLAVEVOLUMESIZE \
 ANSIBLE_HOST_KEY_CHECKING=False \
-ansible-playbook -v  ./ansible/create-instances.yml
+ansible-playbook -v ./ansible/create-instances.yml
+echo ''
+
 # configure common
+echo "Common configuration..."
+echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
+HDPDOMAINNAME=$HDPDOMAINNAME \
+AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
+PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 ANSIBLE_HOST_KEY_CHECKING=False \
-ansible-playbook -v -i ~/.ansible/local_inventory/all_instances  ./ansible/configure-instances-common.yml
+ansible-playbook -vvv -i "$g_local_inventory/all_instances" ./ansible/configure-instances-common.yml
+echo ''
+
 # configure edge node
+echo "Configure edge node..."
+echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
+HDPDOMAINNAME=$HDPDOMAINNAME \
+AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
+PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 ANSIBLE_HOST_KEY_CHECKING=False \
-ansible-playbook -v -i ~/.ansible/local_inventory/edgenode_instance  ./ansible/configure-edge-node.yml
-fi 
+ansible-playbook -vvv -i "$g_local_inventory/edgenode_instance" ./ansible/configure-edge-node.yml
+echo ''
+

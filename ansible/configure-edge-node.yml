@@ -17,8 +17,9 @@
 #
 ###
 - hosts: all
-  user: ec2-user
-  sudo: True
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
   vars_files:
   - "variables.yml"
   gather_facts: False
@@ -38,18 +39,19 @@
   - name: Start Ambari server
     service: name=ambari-server state=restarted   
 
-  # Install and Start Hue       
-  - name: Create remote HDP repo
-    shell: wget -nv http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.2.6.0/hdp.repo -O /etc/yum.repos.d/hdp.repo
-  
-  - name: Install Hue
-    yum:
-      pkg: hue
-      state: installed
-
-  - name: Start Hue
-    service: name=hue state=restarted   
+#  # Install and Start Hue       
+#  - name: Create remote HDP repo
+#    shell: wget -nv http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.2.6.0/hdp.repo -O /etc/yum.repos.d/hdp.repo
+#  
+#  - name: Install Hue
+#    yum:
+#      pkg: hue
+#      state: installed
+#
+#  - name: Start Hue
+#    service: name=hue state=restarted   
       
   - debug: msg="Ambari Server available at http://{{ inventory_hostname }}:8080"
 
-  - debug: msg="Hue Server available at http://{{ inventory_hostname }}:8000"  
+#  - debug: msg="Hue Server available at http://{{ inventory_hostname }}:8000"  
+

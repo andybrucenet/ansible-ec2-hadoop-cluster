@@ -18,30 +18,46 @@
 
     
 - hosts: all
-  user: ec2-user
-  sudo: True
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
   vars_files:
   - "variables.yml"
   gather_facts: False
   
   tasks:
   - name: Copying PEM File to Instance
-    copy: src="~/{{ pemkey }}.pem" dest="/home/ec2-user/{{ pemkey }}.pem" owner=ec2-user mode=0400
+    copy: src="{{ pemkey }}" dest="/home/{{ ssh_login }}/{{ pemkey_name }}" owner="{{ ssh_login }}" mode=0400
     
   - name: Adding SSH Identity
-    lineinfile: dest=/etc/ssh/ssh_config insertafter=EOF line="Host *\n\tIdentityFile /home/ec2-user/{{ pemkey }}.pem"
+    lineinfile: dest=/etc/ssh/ssh_config insertafter=EOF line="Host *\n\tIdentityFile /home/{{ ssh_login }}/{{ pemkey_name }}"
     
   - name: Copying hosts file to instance
-    copy: src="~/.ansible/local_inventory/hdp.hosts" dest=/etc/hosts  
+    copy: src="~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts" dest=/etc/hosts  
 
   - name: Create hostname in /etc/hostname
-    lineinfile: dest=/etc/hostname state=present create=yes regexp='.*' line="{{ internalhostname }}"
+    lineinfile: dest=/etc/hostname state=present create=yes regexp='.*' line="{{ internalhostname }}.{{ domainname }}"
 
   - name: Set hostname in /etc/sysconfig/network
-    lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='HOSTNAME=.*' line="HOSTNAME={{ internalhostname }}"
+    lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='HOSTNAME=.*' line="HOSTNAME={{ internalhostname }}.{{ domainname }}"
 
   - name: Set hostname
-    shell: hostname {{ internalhostname }}  
+    shell: hostnamectl set-hostname {{ internalhostname }}.{{ domainname }}
+
+  - name: Use iptables instead of firewalld
+    command: "{{ item }}"
+    ignore_errors: yes
+    with_items:
+    - systemctl stop firewalld
+    - systemctl mask firewalld
+    - yum install -y iptables-services
+    - systemctl disable iptables
+   
+  - name: Initial iptables config
+    command: "{{ item }}"
+    ignore_errors: yes
+    with_items:
+    - systemctl start iptables
     
   - name: Stop iptables
     service: name=iptables state=stopped
@@ -66,12 +82,19 @@
   - name: Set networking yes
     lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='NETWORKING=.*' line='NETWORKING=yes'
 
+  - name: Install wget
+    yum:
+      pkg: wget
+      state: installed
+  
   # Install Oracle JDK
   - name: Download Oracle JDK
-    shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-7-linux-x64.rpm"
+    shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-linux-x64.rpm"
+    args:
+      creates: /opt/jdk-linux-x64.rpm
 
   - name: Install Oracle JDK
-    shell: rpm -Uvh --force /opt/jdk-7-linux-x64.rpm
+    shell: yum localinstall -y /opt/jdk-linux-x64.rpm
  
   - name: Write out alternatives file
     template: src=../templates/java_alternatives.j2 dest=/tmp/java_alternatives.sh
@@ -96,4 +119,5 @@
       state: installed
 
   - name: Start Ambari agent
-    service: name=ambari-agent state=restarted  
+    service: name=ambari-agent state=restarted
+

@@ -1,27 +1,31 @@
-region: ap-southeast-2
+region: "{{ lookup('env', 'AWS_REGION') | default('us-west-2',true) }}"
 pemkey: "{{ lookup('env', 'PEMKEY') }}"
+pemkey_name: "{{ lookup('env', 'PEMKEYNAME') }}"
 access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
 secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
 clustername: "{{ lookup('env', 'HDPCLUSTERNAME') }}"
+domainname: "{{ lookup('env', 'HDPDOMAINNAME') }}"
 edgenode_instancetype: "{{ lookup('env', 'EDGENODETYPE') }}"
 hdpmaster_instancetype: "{{ lookup('env', 'MASTERNODETYPE') }}"
 hdpslave_instancetype: "{{ lookup('env', 'SLAVENODETYPE') }}"
 number_of_nodes: "{{ lookup('env', 'NUMNODES') }}"
 root_ebs_size: "{{ lookup('env', 'EBSVOLSIZE') }}"
-vpc_cidr_block: 10.0.0.0/16
-vpc_subnets:
- - cidr: 10.0.1.0/24
-   az: ap-southeast-2a
+vpc_id: "{{ lookup('env', 'AWS_VPC_ID') | default('vpc-69832d0e',true) }}"
+vpc_subnet:
+ cidr: "{{ lookup('env', 'AWS_SUBNET_RANGE') | default('172.20.242.16/28',true) }}"
+ az: "{{ lookup('env', 'AWS_REGION_AZ') | default('us-west-2b',true) }}"
 vpc_internet_gateway: "yes"
-vpc_route_tables:
- - subnets:
-    - 10.0.1.0/24
-   routes:
-    - dest: 0.0.0.0/0
-      gw: igw
-imageid: ami-b72fb78d
-oracle_jdk_download: "http://download.oracle.com/otn-pub/java/jdk/7u51-b13/jdk-7u51-linux-x64.rpm"
-oracle_jdk_version: jdk1.7.0_51
-hdp_ambari_repo: "http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.0.0/ambari.repo"
+vpc_route_table:
+ subnets:
+   - "{{ lookup('env', 'AWS_SUBNET_RANGE') | default('172.20.242.16/28',true) }}"
+ routes:
+  - dest: 0.0.0.0/0
+    gateway_id: "{{ lookup('env', 'AWS_IGW_ID') | default('igw-35106e51',true) }}"
+imageid: "{{ lookup('env', 'AWS_AMI_ID') | default('ami-d2c924b2',true) }}"
+ssh_login: "{{ lookup('env', 'AWS_SSH_LOGIN') | default('centos',true) }}"
+tag_prefix: "{{ lookup('env', 'AWS_PREFIX') }}"
+oracle_jdk_download: "http://download.oracle.com/otn-pub/java/jdk/8u111-b14/jdk-8u111-linux-x64.rpm"
+oracle_jdk_version: jdk1.8.0_111
+hdp_ambari_repo: " http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.4.2.0/ambari.repo"
 java_alternatives: "{{ lookup('file', '../scripts/java_alternatives.sh') }}"
 

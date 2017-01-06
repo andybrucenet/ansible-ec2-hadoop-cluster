@@ -1,0 +1,35 @@
+---
+###
+#
+# destroy-instances.yml
+# Written by: Jeffrey Aven
+#             Aven Solutions Pty Ltd
+#             http://avensolutions.com
+#
+# Destroys:
+#   VPC, Subnets, Route Tables, Internet Gateway
+#   Security Groups and Specified Hadoop and Edge Node Instances
+#
+###
+
+- hosts: localhost
+  connection: local
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+  
+  tasks:
+
+# kill slave nodes
+  - name: Destroy the EC2 Instances for the Slave Nodes
+    local_action:
+     module: ec2
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     region: "{{ region }}"
+     instance_tags:
+      Name: "{{ clustername }}SLAVE{{ item }}"
+     state: absent
+    register: ec2_slaves
+    with_sequence: count={{ number_of_nodes }}
+    
