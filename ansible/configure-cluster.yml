@@ -1,15 +1,15 @@
 ---
 ###
 #
-# configure-instances-common.yml
-# Written by: Jeffrey Aven
-#             Aven Solutions Pty Ltd
-#             http://avensolutions.com
-#
-# Common configuration for all Hadoop instances
+# configure-cluster.yml
+# Installs Ambari, starts agent / server, auto initializes cluster
 #
 ###
-- hosts: all
+
+#
+# Wait for hosts to be available
+#    
+- hosts: allnodes
   connection: local
 
   tasks:
@@ -17,7 +17,11 @@
     local_action: wait_for host={{ inventory_hostname }} port=22
 
     
-- hosts: all
+#
+# Common cluster configuration
+#    
+
+- hosts: allnodes
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -36,13 +40,13 @@
     copy: src="~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts" dest=/etc/hosts  
 
   - name: Create hostname in /etc/hostname
-    lineinfile: dest=/etc/hostname state=present create=yes regexp='.*' line="{{ internalhostname }}.{{ domainname }}"
+    lineinfile: dest=/etc/hostname state=present create=yes regexp='.*' line="{{ hostnameinternal }}.{{ domainname }}"
 
   - name: Set hostname in /etc/sysconfig/network
-    lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='HOSTNAME=.*' line="HOSTNAME={{ internalhostname }}.{{ domainname }}"
+    lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='HOSTNAME=.*' line="HOSTNAME={{ hostnameinternal }}.{{ domainname }}"
 
   - name: Set hostname
-    shell: hostnamectl set-hostname {{ internalhostname }}.{{ domainname }}
+    shell: hostnamectl set-hostname {{ hostnameinternal }}.{{ domainname }}
 
   - name: Use iptables instead of firewalld
     command: "{{ item }}"
@@ -87,6 +91,16 @@
       pkg: wget
       state: installed
   
+  - name: Install epel
+    yum:
+      pkg: epel-release
+      state: installed
+  
+  - name: Install jq
+    yum:
+      pkg: jq
+      state: installed
+  
   # Install Oracle JDK
   - name: Download Oracle JDK
     shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-linux-x64.rpm"
@@ -109,7 +123,6 @@
     shell: ln -s `sudo find / -name jps | grep jdk` /usr/bin/jps  
 
   # Download/Install Ambari Repo and Agent    
-    
   - name: Create Ambari Repo
     get_url: url={{ hdp_ambari_repo }} dest=/etc/yum.repos.d/ambari.repo
     
@@ -120,4 +133,81 @@
 
   - name: Start Ambari agent
     service: name=ambari-agent state=restarted
+
+#
+# Install and Start Ambari Server       
+#    
+- hosts: edge
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+  
+  tasks:
+  - name: Install Ambari server
+    yum:
+      pkg: ambari-server
+      state: installed
+
+  - name: Configure Ambari server
+    command: ambari-server setup -s
+
+  - name: Start Ambari server
+    service: name=ambari-server state=restarted   
+
+  - name: Wait for Ambari server
+    shell: sh -c "l_count=$(ss -tln '( sport = :8080 )' | grep -e '^LISTEN' | head -n 1 | wc -l); [[ l_count -eq 1 ]] && true"
+    register: wait_ambari_server
+    until: wait_ambari_server.rc == 0
+    retries: 120
+    delay: 5
+
+  - debug: msg="Ambari Server is ready"
+
+#
+# Configure Ambari Agent on all Nodes
+#    
+- hosts: master:data
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+  
+  tasks:
+  - name: Configure Ambari server name on each agent
+    ini_file:
+     dest: /etc/ambari-agent/conf/ambari-agent.ini
+     section: server
+     option: hostname
+     value: "EDGE.{{ domainname }}"
+
+  - name: Restart Ambari agent
+    service: name=ambari-agent state=restarted
+
+  - debug: msg="Ambari Agents reconfigured"
+
+#
+# Wait for cluster to initialize
+#    
+- hosts: edge
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Wait for Ambari agents to register
+    shell: sh -c "l_hosts=$(curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X GET -u admin:admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/hosts | jq '.items | length') ; [[ l_hosts -eq {{ number_of_nodes }}+3 ]] && true"
+    register: wait_ambari_agents
+    until: wait_ambari_agents.rc == 0
+    retries: 20
+    delay: 6
+
+  - debug: msg="Ambari Server available at http://{{ inventory_hostname }}:8080"
 

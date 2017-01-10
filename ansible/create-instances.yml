@@ -31,7 +31,7 @@
       az: "{{ vpc_subnet.az }}"
       cidr: "{{ vpc_subnet.cidr }}"
       region: "{{ region }}"
-      resource_tags: { "Name":"{{ tag_prefix }}-HDP-Subnet" }
+      resource_tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-Subnet" }
       validate_certs: no
       vpc_id: "{{ vpc_id }}"
     register: the_vpc_subnet
@@ -49,7 +49,7 @@
      region: "{{ region }}"
      routes: "{{ vpc_route_table.routes }}"
      subnets: "{{ vpc_route_table.subnets }}"
-     resource_tags: { "Name":"{{ tag_prefix }}-HDP-RouteTable" }
+     resource_tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-RouteTable" }
      validate_certs: no
      vpc_id: "{{ vpc_id }}"
     register: the_vpc_route_table
@@ -57,10 +57,10 @@
 #
 # Create Security Groups
 #       
-  - name: Create the Edge Node security group for the HDP Cluster
+  - name: Edge Node - Security Group
     local_action:
      module: ec2_group
-     name: edgenode_sg
+     name: "{{ tag_prefix }}-{{ clustername }}-sg-edge"
      description: HDP Edge Node Security Group
      purge_rules: False
      purge_rules_egress: False
@@ -123,12 +123,21 @@
         from_port: 4321
         to_port: 4321
         cidr_ip: 0.0.0.0/0
+      - proto: all
+        cidr_ip: "{{ vpc_subnet.cidr }}"
     register: edgenode_sg
 
-  - name: Create the Hadoop security group for the HDP Cluster
+#  - debug: var=edgenode_sg
+
+  - name: Edge Node - Tag Security Group
+    ec2_tag:
+     resource: "{{ edgenode_sg.group_id }}"
+     tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-sg-edge" }
+
+  - name: Hadoop Node - Security Group
     local_action:
      module: ec2_group
-     name: hadoop_sg
+     name: "{{ tag_prefix }}-{{ clustername }}-sg-hadoop"
      description: HDP Hadoop Security Group
      purge_rules: False
      purge_rules_egress: False
@@ -146,15 +155,20 @@
         to_port: 8042
         cidr_ip: 0.0.0.0/0        
       - proto: all
-        group_name: edgenode_sg
+        group_name: "{{ tag_prefix }}-{{ clustername }}-sg-edge"
       - proto: all
         cidr_ip: "{{ vpc_subnet.cidr }}"
     register: hadoop_sg
 
-  - name: Create the Master Node security group for the HDP Cluster
+  - name: Hadoop Node - Tag Security Group
+    ec2_tag:
+     resource: "{{ hadoop_sg.group_id }}"
+     tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-sg-hadoop" }
+
+  - name: Master Node - Security Group
     local_action:
      module: ec2_group
-     name: nn_sg
+     name: "{{ tag_prefix }}-{{ clustername }}-sg-master"
      description: HDP Master Node Security Group
      purge_rules: False
      purge_rules_egress: False
@@ -175,12 +189,23 @@
         from_port: 15000
         to_port: 15000
         cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 9995
+        to_port: 9995
+        cidr_ip: 0.0.0.0/0
+      - proto: all
+        cidr_ip: "{{ vpc_subnet.cidr }}"
     register: nn_sg    
     
-  - name: Update Edge Node Security Group
+  - name: Master Node - Tag Security Group
+    ec2_tag:
+     resource: "{{ nn_sg.group_id }}"
+     tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-sg-master" }
+
+  - name: Master Node - Reference Edge Node Security Group
     local_action:
      module: ec2_group
-     name: edgenode_sg
+     name: "{{ tag_prefix }}-{{ clustername }}-sg-master"
      description: HDP Edge Node Security Group
      purge_rules: False
      purge_rules_egress: False
@@ -190,19 +215,25 @@
      aws_secret_key: "{{ secret_key }}"
      rules:
       - proto: all
-        group_name: hadoop_sg    
+        group_name: "{{ tag_prefix }}-{{ clustername }}-sg-edge"
 
-  - debug: var=the_vpc_subnet
+#  - debug: var=the_vpc_subnet
 
 #
-# Create Edge Node        
+# Persistent data setup
 #
-  - name: Creating local_inventory/ansible-ec2-hadoop-cluster directory if it does not exist 
-    file: path=~/.ansible/local_inventory/ansible-ec2-hadoop-cluster state=directory
+  - name: Creating local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }} directory if it does not exist 
+    file: path=~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }} state=directory
+
+  - name: Initialize all_nodes file
+    shell: truncate -s 0 ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes 
 
   - name: Initialize hdp.hosts file
     shell: echo -e "127.0.0.1\tlocalhost" > ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts 
       
+#
+# Create Edge Node        
+#
   - name: Create the EC2 Instance for the Edge Node
     local_action:
      module: ec2
@@ -222,19 +253,18 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}EDGENODE"
+      Name: "{{ tag_prefix }}-{{ clustername }}-EDGE"
     register: ec2_edgenode
 
-  - name: Adding host to edgenode_instance inventory file
-    shell: echo -e "{{ ec2_edgenode.instances[0].public_dns_name }}\tansible_ssh_private_key_file={{ pemkey }}\tansible_ssh_user={{ ssh_login }}\tinternalhostname={{ clustername }}EDGENODE" > ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/edgenode_instance        
+  - name: Add edge node to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ ec2_edgenode.instances[0].public_dns_name }} --hostname-internal=EDGE --groups edge allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     
   - name: Add edge node to hdp.hosts file
-    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\t{{ clustername }}EDGENODE.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tEDGE.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
     
 #
 # Create Master Nodes
 #    
-
   - name: Create the EC2 Instances for the Master Nodes
     local_action:
      module: ec2
@@ -254,29 +284,22 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}MASTER{{ item }}"
+      Name: "{{ tag_prefix }}-{{ clustername }}-MASTER{{ item }}"
     register: ec2_masters
     with_sequence: count=2
    
-  - name: Remove masternode_instances file
-    shell: rm -f ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/masternode_instances 
+  - name: Add master nodes to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=MASTER{{ item.0 + 1 }} --groups master master{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    with_indexed_items: "{{ ec2_masters.results }}"
     
-  - name: Adding hosts to custom inventory       
-    shell: echo -e "{{ item.instances[0].public_dns_name }}\tansible_ssh_private_key_file={{ pemkey }}\tansible_ssh_user={{ ssh_login }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/masternode_instances
-    with_items: "{{ ec2_masters.results }}" 
-    
-  - name: Adding hostnames to inventory
-    shell: cd ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster;awk '{ print $0 "\tinternalhostname={{ clustername }}MASTER" FNR }' masternode_instances > masternode_instances.tmp && mv masternode_instances.tmp masternode_instances
-
   - name: Add master nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\t{{ clustername }}MASTER{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tMASTER{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
     with_indexed_items: "{{ ec2_masters.results }}"    
 
 #
-# Create Slave Nodes
+# Create Data Nodes
 #       
-
-  - name: Create the EC2 Instances for the Slave Nodes
+  - name: Create the EC2 Instances for the Data Nodes
     local_action:
      module: ec2
      aws_access_key: "{{ access_key }}"
@@ -284,7 +307,7 @@
      region: "{{ region }}"
      key_name: "{{ pemkey_name }}"
      group_id: "{{ hadoop_sg.group_id }}"
-     instance_type: "{{ hdpslave_instancetype }}"
+     instance_type: "{{ hdpdata_instancetype }}"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
      assign_public_ip: yes  
@@ -295,29 +318,15 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}SLAVE{{ item }}"
-    register: ec2_slaves
+      Name: "{{ tag_prefix }}-{{ clustername }}-DATA{{ item }}"
+    register: ec2_datas
     with_sequence: count={{ number_of_nodes }}
     
-  - name: Remove slavenode_instances file
-    shell: rm -f ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/slavenode_instances 
+  - name: Add data nodes to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=DATA{{ item.0 + 1 }} --groups data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    with_indexed_items: "{{ ec2_datas.results }}"
     
-  - name: Adding hosts to custom inventory       
-    shell: echo -e "{{ item.instances[0].public_dns_name }}\tansible_ssh_private_key_file={{ pemkey }}\tansible_ssh_user={{ ssh_login }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/slavenode_instances
-    with_items: "{{ ec2_slaves.results }}" 
-    
-  - name: Adding hostnames to inventory
-    shell: cd ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster;awk '{ print $0 "\tinternalhostname={{ clustername }}SLAVE" FNR }' slavenode_instances > slavenode_instances.tmp && mv slavenode_instances.tmp slavenode_instances
-
-  - name: Add slave nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\t{{ clustername }}SLAVE{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
-    with_indexed_items: "{{ ec2_slaves.results }}"    
-
-# Creating Global Inventory    
-    
-  - name: Remove global inventory file (all_instances)
-    shell: rm -f ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/all_instances 
-    
-  - name: Creating global inventory file (all_instances)
-    shell: cd ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster;cat edgenode_instance masternode_instances slavenode_instances > all_instances
+  - name: Add data nodes to hdp.hosts file
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tDATA{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    with_indexed_items: "{{ ec2_datas.results }}"    
 

@@ -48,16 +48,9 @@ function read_entry {
 rm -rf "$g_local_inventory"
 
 # read command line options
-#set -x
-#echo "\@='$@'"
-#TEMP=`getopt -o a::s::n::k::e::m::l::z::c::h --long awsaccesskey::,awssecretkey::,clustername::,pemkey::,edgeinstancetype::,masterinstancetype::,slaveinstancetype::,slavevolumesize::,slavecount::,help -n start-here.sh -- "$@"`
-#TEMP=`getopt -o a:: -n 'start-here.sh' -- "$@"`
-#getopt -o a:: -n 'start-here.sh' -- "$@"
-#eval set -- "$TEMP"
-#echo "TEMP='$TEMP'"
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
-while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::c::h FLAG; do
+while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::h FLAG; do
   case "$FLAG" in
     a) AWS_ACCESS_KEY_ID="$OPTARG" ;;
     s) AWS_SECRET_ACCESS_KEY="$OPTARG" ;;
@@ -75,9 +68,9 @@ while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::c::h FLAG; d
     d) HDPDOMAINNAME="$OPTARG" ;;
     e) EDGEINSTANCETYPE="$OPTARG" ;;
     m) MASTERINSTANCETYPE="$OPTARG" ;;
-    l) SLAVEINSTANCETYPE="$OPTARG" ;;
-    z) SLAVEVOLUMESIZE="$OPTARG" ;;
-    c) SLAVECOUNT="$OPTARG" ;;
+    l) DATAINSTANCETYPE="$OPTARG" ;;
+    z) DATAVOLUMESIZE="$OPTARG" ;;
+    c) DATACOUNT="$OPTARG" ;;
     h)
       cat << EOF
 Usage:
@@ -100,9 +93,9 @@ Options:
   -d - Domain Name to use for the cluster components
   -e - EC2 instance type for EDGE node
   -m - EC2 instance type for MASTER node
-  -l - EC2 instance type for SLAVE node(s)
-  -z - EC2 volume size (GB) to attach to each SLAVE node
-  -c - Number of EC2 SLAVE node(s)
+  -l - EC2 instance type for DATA node(s)
+  -z - EC2 volume size (GB) to attach to each DATA node
+  -c - Number of EC2 DATA node(s)
 EOF
       exit 0;;
     *) echo "Invalid option '$FLAG'" ; exit 1 ;;
@@ -180,15 +173,15 @@ MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCE
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-SLAVEINSTANCETYPE=$(read_entry 'Enter SLAVE Instance Type' '' "$SLAVEINSTANCETYPE" 'm3.large')
+DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.large')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-SLAVEVOLUMESIZE=$(read_entry 'Enter SLAVE Volume Size (GB)' '' "$SLAVEVOLUMESIZE" '300')
+DATAVOLUMESIZE=$(read_entry 'Enter DATA Volume Size (GB)' '' "$DATAVOLUMESIZE" '300')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-SLAVECOUNT=$(read_entry 'Enter SLAVE Node Count' '' "$SLAVECOUNT" '2')
+DATACOUNT=$(read_entry 'Enter DATA Node Count' '' "$DATACOUNT" '2')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
@@ -210,9 +203,9 @@ CONFTEXT="$CONFTEXT\nPEMKEYNAME=$PEMKEYNAME"
 CONFTEXT="$CONFTEXT\nPEMKEY=$PEMKEY"
 CONFTEXT="$CONFTEXT\nEDGE Instance Type=$EDGEINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nMASTER Instance Type=$MASTERINSTANCETYPE"
-CONFTEXT="$CONFTEXT\nSLAVE Instance Type=$SLAVEINSTANCETYPE"
-CONFTEXT="$CONFTEXT\nSLAVE Volume Size=$SLAVEVOLUMESIZE"
-CONFTEXT="$CONFTEXT\nSLAVE Node Count=$SLAVECOUNT"
+CONFTEXT="$CONFTEXT\nDATA Instance Type=$DATAINSTANCETYPE"
+CONFTEXT="$CONFTEXT\nDATA Volume Size=$DATAVOLUMESIZE"
+CONFTEXT="$CONFTEXT\nDATA Node Count=$DATACOUNT"
 CONFTEXT="$CONFTEXT\n\nPress [OK] to continue or [Ctrl+C] to cancel"
 echo -n -e "$CONFTEXT"
 read OK_PROMPT
@@ -242,34 +235,25 @@ PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 EDGENODETYPE=$EDGEINSTANCETYPE \
 MASTERNODETYPE=$MASTERINSTANCETYPE \
-SLAVENODETYPE=$SLAVEINSTANCETYPE \
-NUMNODES=$SLAVECOUNT \
-EBSVOLSIZE=$SLAVEVOLUMESIZE \
+DATANODETYPE=$DATAINSTANCETYPE \
+NUMNODES=$DATACOUNT \
+EBSVOLSIZE=$DATAVOLUMESIZE \
 ANSIBLE_HOST_KEY_CHECKING=False \
+PATH="$PWD/scripts:$PATH" \
 ansible-playbook -v ./ansible/create-instances.yml
 echo ''
 
-# configure common
-echo "Common configuration..."
+# configure cluster
+echo "Configure cluster"
 echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
 HDPDOMAINNAME=$HDPDOMAINNAME \
 AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
 PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
+NUMNODES=$DATACOUNT \
 ANSIBLE_HOST_KEY_CHECKING=False \
-ansible-playbook -vvv -i "$g_local_inventory/all_instances" ./ansible/configure-instances-common.yml
-echo ''
-
-# configure edge node
-echo "Configure edge node..."
-echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
-HDPCLUSTERNAME=$HDPCLUSTERNAME \
-HDPDOMAINNAME=$HDPDOMAINNAME \
-AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
-PEMKEYNAME=$PEMKEYNAME \
-PEMKEY=$PEMKEY \
-ANSIBLE_HOST_KEY_CHECKING=False \
-ansible-playbook -vvv -i "$g_local_inventory/edgenode_instance" ./ansible/configure-edge-node.yml
+PATH="$PWD/scripts:$PATH" \
+ansible-playbook -v -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/configure-cluster.yml
 echo ''
 
