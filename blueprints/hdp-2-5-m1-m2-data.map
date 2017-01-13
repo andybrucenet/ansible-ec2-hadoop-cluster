@@ -1,7 +1,7 @@
 {
   "blueprint":"{{ blueprint }}.blueprint",
   "default_password": "34ab12cd",
-  "provision_action" : "INSTALL_ONLY",
+  "provision_action" : "INSTALL_AND_START",
   "host_groups": [
     {
       "name":"master_1",

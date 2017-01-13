@@ -193,6 +193,10 @@
         from_port: 9995
         to_port: 9995
         cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 21000
+        to_port: 21000
+        cidr_ip: 0.0.0.0/0
       - proto: all
         cidr_ip: "{{ vpc_subnet.cidr }}"
     register: nn_sg    
@@ -254,6 +258,7 @@
         delete_on_termination: True
      instance_tags:
       Name: "{{ tag_prefix }}-{{ clustername }}-edge"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_edgenode
 
   - name: Add edge node to inventory
@@ -285,6 +290,7 @@
         delete_on_termination: True
      instance_tags:
       Name: "{{ tag_prefix }}-{{ clustername }}-master{{ item }}"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_masters
     with_sequence: count=2
    
@@ -319,6 +325,7 @@
         delete_on_termination: True
      instance_tags:
       Name: "{{ tag_prefix }}-{{ clustername }}-data{{ item }}"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_datas
     with_sequence: count={{ number_of_nodes }}
     

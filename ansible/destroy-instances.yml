@@ -1,0 +1,99 @@
+---
+###
+#
+# destroy-instances.yml
+# Written by: Jeffrey Aven
+#             Aven Solutions Pty Ltd
+#             http://avensolutions.com
+#
+# Creates:
+#   VPC, Subnets, Route Tables, Internet Gateway
+#   Security Groups and Specified Hadoop and Edge Node Instances
+#
+###
+
+- hosts: allnodes
+  connection: local
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Terminate EC2 Instances
+    ignore_errors: yes
+    local_action:
+     module: ec2
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     region: "{{ region }}"
+     image: "{{ imageid }}"
+     instance_tags:
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
+     count_tag: Cluster
+     exact_count: 0
+
+- hosts: localhost
+  connection: local
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+  
+  tasks:
+  - name: Remove Security Group dependencies
+    ignore_errors: yes
+    local_action:
+     module: ec2_group
+     name: "{{ tag_prefix }}-{{ clustername }}-{{ item }}"
+     description: dummy
+     purge_rules: True
+     vpc_id: "{{ vpc_id }}"
+     region: "{{ region }}"
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+    with_items:
+     - sg-edge
+     - sg-hadoop
+     - sg-master
+
+  - name: Remove Security Groups
+    ignore_errors: yes
+    local_action:
+     module: ec2_group
+     name: "{{ tag_prefix }}-{{ clustername }}-{{ item }}"
+     description: dummy
+     state: absent
+     vpc_id: "{{ vpc_id }}"
+     region: "{{ region }}"
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+    with_items:
+     - sg-edge
+     - sg-hadoop
+     - sg-master
+
+  - name: Remove the VPC subnet
+    local_action:
+      module: ec2_vpc_subnet
+      state: absent
+      aws_access_key: "{{ access_key }}"
+      aws_secret_key: "{{ secret_key }}"
+      az: "{{ vpc_subnet.az }}"
+      cidr: "{{ vpc_subnet.cidr }}"
+      region: "{{ region }}"
+      resource_tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-Subnet" }
+      validate_certs: no
+      vpc_id: "{{ vpc_id }}"
+
+  - name: Remove the VPC route table
+    ignore_errors: yes
+    local_action:
+     module: ec2_vpc_route_table
+     state: absent
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     lookup: tag
+     region: "{{ region }}"
+     resource_tags: { "Name":"{{ tag_prefix }}-{{ clustername }}-RouteTable" }
+     validate_certs: no
+     vpc_id: "{{ vpc_id }}"
+

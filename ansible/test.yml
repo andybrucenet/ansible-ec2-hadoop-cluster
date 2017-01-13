@@ -11,8 +11,68 @@
   - "variables.yml"
   gather_facts: False
 
+  - name: Wait for Ambari server
+    shell: sh -c "l_count=$(ss -tln '( sport = :8080 )' | grep -e '^LISTEN' | head -n 1 | wc -l); [[ l_count -eq 1 ]] && true"
+    register: wait_ambari_server
+    until: wait_ambari_server.rc == 0
+    retries: 120
+    delay: 5
+
+  - debug: msg="Ambari Server is ready"
+
+#
+# Configure Ambari Agent on all Nodes
+#    
+- hosts: master:data
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+  
   tasks:
-  - name: Create cluster
+  - name: Configure Ambari server name on each agent
+    ini_file:
+     dest: /etc/ambari-agent/conf/ambari-agent.ini
+     section: server
+     option: hostname
+     value: "edge.{{ domainname }}"
+
+  - name: Restart Ambari agent
+    service: name=ambari-agent state=restarted
+
+  - debug: msg="Ambari Agents reconfigured"
+
+#
+# Wait for cluster to initialize
+#    
+- hosts: edge
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Wait for Ambari agents to register
+    shell: sh -c "l_hosts=$(curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X GET -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/hosts | jq '.items | length') ; [[ l_hosts -eq {{ number_of_nodes }}+3 ]] && true"
+    register: wait_ambari_agents
+    until: wait_ambari_agents.rc == 0
+    retries: 20
+    delay: 6
+
+  - name: Copying Ambari blueprint
+    copy: src="{{ topfolder }}/blueprints/{{ blueprint }}.blueprint" dest="/home/{{ ssh_login }}/{{ blueprint }}.blueprint" owner="{{ ssh_login }}" mode=0400
+
+  - name: Register Ambari blueprint
+    shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X POST -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/blueprints/{{ blueprint }}.blueprint -d@./{{ blueprint }}.blueprint"
+
+  - name: Copy blueprint map template to remote
+    template: src="{{ topfolder }}/blueprints/{{ blueprint }}.map" dest="./{{ blueprint }}.map" owner="{{ ssh_login }}" mode=0640
+
+  - name: Create Ambari cluster from blueprint
     shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X POST -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }} -d@./{{ blueprint }}.map"
 
   - debug: msg="Ambari Server available at http://{{ inventory_hostname }}:8080"

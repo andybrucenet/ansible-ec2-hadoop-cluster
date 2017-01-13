@@ -167,15 +167,15 @@ if echo "$g_pemkey_perms" | grep --quiet -e '^[46]\([1-9].\|.[1-9]\)'; then
   exit 1
 fi
 
-EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 'm3.medium')
+EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 'm3.large')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCETYPE" 'm3.large')
+MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCETYPE" 'm3.2xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.large')
+DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
@@ -225,6 +225,7 @@ l_ansible_sudo_flags='-H -S'
 
 # create instances
 echo "Create instances..."
+set -x
 ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 AWS_REGION=$AWS_REGION \
 AWS_REGION_AZ=$AWS_REGION_AZ \
@@ -249,11 +250,18 @@ BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
 TOPFOLDER="$PWD" \
-ansible-playbook -v ./ansible/create-instances.yml
+ansible-playbook ./ansible/create-instances.yml
+set +x
+echo ''
+
+# wait three minutes to let the systems settle
+echo 'Waiting three minutes for cluster to settle...'
+sleep 180
 echo ''
 
 # configure cluster
 echo "Configure cluster"
+set -x
 ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
 HDPDOMAINNAME=$HDPDOMAINNAME \
@@ -265,6 +273,36 @@ BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
 TOPFOLDER="$PWD" \
-ansible-playbook -v -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/configure-cluster.yml
+ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/configure-cluster.yml
+set +x
+echo ''
+
+# show how to destroy the cluster
+echo "To destroy the cluster, use the following:"
+echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
+AWS_REGION=$AWS_REGION \
+AWS_REGION_AZ=$AWS_REGION_AZ \
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+AWS_VPC_ID=$AWS_VPC_ID \
+AWS_SUBNET_RANGE=$AWS_SUBNET_RANGE \
+AWS_IGW_ID=$AWS_IGW_ID \
+AWS_AMI_ID=$AWS_AMI_ID \
+AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
+AWS_PREFIX=$AWS_PREFIX \
+HDPCLUSTERNAME=$HDPCLUSTERNAME \
+HDPDOMAINNAME=$HDPDOMAINNAME \
+PEMKEYNAME=$PEMKEYNAME \
+PEMKEY=$PEMKEY \
+EDGENODETYPE=$EDGEINSTANCETYPE \
+MASTERNODETYPE=$MASTERINSTANCETYPE \
+DATANODETYPE=$DATAINSTANCETYPE \
+NUMNODES=$DATACOUNT \
+EBSVOLSIZE=$DATAVOLUMESIZE \
+BLUEPRINT=$BLUEPRINT \
+ANSIBLE_HOST_KEY_CHECKING=False \
+PATH="$PWD/scripts:$PATH" \
+TOPFOLDER="$PWD" \
+ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/destroy-instances.yml
 echo ''
 
