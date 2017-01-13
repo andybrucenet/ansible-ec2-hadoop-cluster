@@ -1,0 +1,35 @@
+{
+  "blueprint":"{{ blueprint }}.blueprint",
+  "default_password": "34ab12cd",
+  "provision_action" : "INSTALL_ONLY",
+  "host_groups": [
+    {
+      "name":"master_1",
+      "hosts":[
+{% for node in groups['master1'] %}
+        {"fqdn":"{{ hostvars[node].hostnameinternal }}.{{ domainname }}"}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+      ]
+    },
+    {
+      "name":"master_2",
+      "hosts":[
+{% for node in groups['master2'] %}
+        {"fqdn":"{{ hostvars[node].hostnameinternal }}.{{ domainname }}"}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+      ]
+    },
+    {
+      "name":"data_nodes",
+      "hosts":[ 
+{% for node in groups['data'] %}
+        {"fqdn":"{{ hostvars[node].hostnameinternal }}.{{ domainname }}"}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+      ]
+    }
+  ]
+}
+

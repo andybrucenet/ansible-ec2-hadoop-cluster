@@ -6,6 +6,7 @@ Ambari Blueprints
 
 Sample command to build this environment:
 
+''''
 # text values to feed to the process
 AWS_CREDENTIALS=~/.aws/credentials
 AWS_PEMKEY=~/.ssh/aws-devenv-key.pem
@@ -41,4 +42,5 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
   -x $AWS_PREFIX \
   -p $AWS_PEMKEYNAME \
   -k $AWS_PEMKEY
+''''
 

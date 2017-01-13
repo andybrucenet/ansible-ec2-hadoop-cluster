@@ -1,0 +1,19 @@
+---
+- hosts: master1:master2:data
+  name: Gather all facts
+  tasks: [ ]
+
+- hosts: edge
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Create cluster
+    shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X POST -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }} -d@./{{ blueprint }}.map"
+
+  - debug: msg="Ambari Server available at http://{{ inventory_hostname }}:8080"
+

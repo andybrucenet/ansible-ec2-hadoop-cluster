@@ -253,14 +253,14 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}-EDGE"
+      Name: "{{ tag_prefix }}-{{ clustername }}-edge"
     register: ec2_edgenode
 
   - name: Add edge node to inventory
-    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ ec2_edgenode.instances[0].public_dns_name }} --hostname-internal=EDGE --groups edge allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ ec2_edgenode.instances[0].public_dns_name }} --hostname-internal=edge --groups edge allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     
   - name: Add edge node to hdp.hosts file
-    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tEDGE.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tedge.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
     
 #
 # Create Master Nodes
@@ -284,16 +284,16 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}-MASTER{{ item }}"
+      Name: "{{ tag_prefix }}-{{ clustername }}-master{{ item }}"
     register: ec2_masters
     with_sequence: count=2
    
   - name: Add master nodes to inventory
-    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=MASTER{{ item.0 + 1 }} --groups master master{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=master{{ item.0 + 1 }} --groups master master{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_masters.results }}"
     
   - name: Add master nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\tMASTER{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tmaster{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
     with_indexed_items: "{{ ec2_masters.results }}"    
 
 #
@@ -318,15 +318,15 @@
         volume_size: "{{ root_ebs_size }}"
         delete_on_termination: True
      instance_tags:
-      Name: "{{ tag_prefix }}-{{ clustername }}-DATA{{ item }}"
+      Name: "{{ tag_prefix }}-{{ clustername }}-data{{ item }}"
     register: ec2_datas
     with_sequence: count={{ number_of_nodes }}
     
   - name: Add data nodes to inventory
-    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=DATA{{ item.0 + 1 }} --groups data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=data{{ item.0 + 1 }} --groups data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_datas.results }}"
     
   - name: Add data nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\tDATA{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tdata{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
     with_indexed_items: "{{ ec2_datas.results }}"    
 

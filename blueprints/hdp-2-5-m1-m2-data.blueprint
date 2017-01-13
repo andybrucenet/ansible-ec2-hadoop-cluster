@@ -46,7 +46,7 @@
           "*.hive.shared.libs" : "hive-exec,hive-metastore,hive-common,hive-service,hive-hcatalog-server-extensions,\\\nhive-hcatalog-core,hive-jdbc,hive-webhcat-java-client",
           "*.broker.impl.class" : "org.apache.activemq.ActiveMQConnectionFactory",
           "*.workflow.engine.impl" : "org.apache.falcon.workflow.engine.OozieWorkflowEngine",
-          "*.broker.url" : "tcp://%HOSTGROUP::host_group_2%:61616",
+          "*.broker.url" : "tcp://%HOSTGROUP::master_2%:61616",
           "*.entity.topic" : "FALCON.ENTITY.TOPIC",
           "*.falcon.feed.lifecycle.policies" : "org.apache.falcon.lifecycle.retention.AgeBasedDelete",
           "*.falcon.graph.preserve.history" : "false",
@@ -218,7 +218,7 @@
           }
         },
         "properties" : {
-          "fs.defaultFS" : "hdfs://%HOSTGROUP::host_group_1%:8020",
+          "fs.defaultFS" : "hdfs://%HOSTGROUP::master_2%:8020",
           "ipc.server.tcpnodelay" : "true",
           "mapreduce.jobtracker.webinterface.trusted" : "false",
           "hadoop.proxyuser.falcon.groups" : "*",
@@ -232,8 +232,8 @@
           "ipc.client.connection.maxidletime" : "30000",
           "hadoop.proxyuser.hcat.groups" : "*",
           "hadoop.proxyuser.livy.groups" : "*",
-          "hadoop.proxyuser.hive.hosts" : "%HOSTGROUP::host_group_2%",
-          "hadoop.proxyuser.root.hosts" : "tclu3EDGENODE.aws-test.local",
+          "hadoop.proxyuser.hive.hosts" : "%HOSTGROUP::master_2%",
+          "hadoop.proxyuser.root.hosts" : "edge.aws-test.local",
           "ha.failover-controller.active-standby-elector.zk.op.retries" : "120",
           "hadoop.security.authentication" : "simple",
           "hadoop.proxyuser.hdfs.hosts" : "*",
@@ -241,8 +241,8 @@
           "io.file.buffer.size" : "131072",
           "hadoop.proxyuser.livy.hosts" : "*",
           "hadoop.proxyuser.falcon.hosts" : "*",
-          "hadoop.proxyuser.oozie.hosts" : "%HOSTGROUP::host_group_2%",
-          "hadoop.proxyuser.hcat.hosts" : "%HOSTGROUP::host_group_2%",
+          "hadoop.proxyuser.oozie.hosts" : "%HOSTGROUP::master_2%",
+          "hadoop.proxyuser.hcat.hosts" : "%HOSTGROUP::master_2%",
           "hadoop.proxyuser.oozie.groups" : "*",
           "net.topology.script.file.name" : "/etc/hadoop/conf/topology_script.py",
           "io.compression.codecs" : "org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.SnappyCodec",
@@ -300,7 +300,7 @@
           "offsets.commit.timeout.ms" : "5000",
           "log.segment.bytes" : "1073741824",
           "offset.metadata.max.bytes" : "4096",
-          "zookeeper.connect" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "zookeeper.connect" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "port" : "6667",
           "zookeeper.sync.time.ms" : "2000",
           "num.replica.fetchers" : "1",
@@ -399,7 +399,7 @@
           "zeppelin.server.kerberos.keytab" : "",
           "zeppelin_log_dir" : "/var/log/zeppelin",
           "log4j_properties_content" : "\nlog4j.rootLogger = INFO, dailyfile\nlog4j.appender.stdout = org.apache.log4j.ConsoleAppender\nlog4j.appender.stdout.layout = org.apache.log4j.PatternLayout\nlog4j.appender.stdout.layout.ConversionPattern=%5p [%d] ({%t} %F[%M]:%L) - %m%n\nlog4j.appender.dailyfile.DatePattern=.yyyy-MM-dd\nlog4j.appender.dailyfile.Threshold = INFO\nlog4j.appender.dailyfile = org.apache.log4j.DailyRollingFileAppender\nlog4j.appender.dailyfile.File = ${zeppelin.log.file}\nlog4j.appender.dailyfile.layout = org.apache.log4j.PatternLayout\nlog4j.appender.dailyfile.layout.ConversionPattern=%5p [%d] ({%t} %F[%M]:%L) - %m%n",
-          "shiro_ini_content" : "\n[users]\n# List of users with their password allowed to access Zeppelin.\n# To use a different strategy (LDAP / Database / ...) check the shiro doc at http://shiro.apache.org/configuration.html#Configuration-INISections\nadmin = 34ab12cd\nuser1 = abcd1234\n#user2 = password3, role3\n#user3 = password4, role2\n\n# Sample LDAP configuration, for user Authentication, currently tested for single Realm\n[main]\n#activeDirectoryRealm = org.apache.zeppelin.server.ActiveDirectoryGroupRealm\n#activeDirectoryRealm.systemUsername = CN=Administrator,CN=Users,DC=HW,DC=EXAMPLE,DC=COM\n#activeDirectoryRealm.systemPassword = Password1!\n#activeDirectoryRealm.hadoopSecurityCredentialPath = jceks://user/zeppelin/zeppelin.jceks\n#activeDirectoryRealm.searchBase = CN=Users,DC=HW,DC=TEST,DC=COM\n#activeDirectoryRealm.url = ldap://ad-nano.test.example.com:389\n#activeDirectoryRealm.groupRolesMap = \"\"\n#activeDirectoryRealm.authorizationCachingEnabled = true\n\n#ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm\n#ldapRealm.userDnTemplate = uid={0},cn=users,cn=accounts,dc=example,dc=com\n#ldapRealm.contextFactory.url = ldap://ldaphost:389\n#ldapRealm.contextFactory.authenticationMechanism = SIMPLE\n#sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager\n#securityManager.sessionManager = $sessionManager\n# 86,400,000 milliseconds = 24 hour\n#securityManager.sessionManager.globalSessionTimeout = 86400000\nshiro.loginUrl = /api/login\n\n[urls]\n# anon means the access is anonymous.\n# authcBasic means Basic Auth Security\n# To enfore security, comment the line below and uncomment the next one\n/api/version = anon\n/** = anon\n#/** = authc",
+          "shiro_ini_content" : "\n[users]\n# List of users with their password allowed to access Zeppelin.\n# To use a different strategy (LDAP / Database / ...) check the shiro doc at http://shiro.apache.org/configuration.html#Configuration-INISections\n#admin = password1\n#user1 = password2, role1, role2\n#user2 = password3, role3\n#user3 = password4, role2\n\n# Sample LDAP configuration, for user Authentication, currently tested for single Realm\n[main]\n#activeDirectoryRealm = org.apache.zeppelin.server.ActiveDirectoryGroupRealm\n#activeDirectoryRealm.systemUsername = CN=Administrator,CN=Users,DC=HW,DC=EXAMPLE,DC=COM\n#activeDirectoryRealm.systemPassword = Password1!\n#activeDirectoryRealm.hadoopSecurityCredentialPath = jceks://user/zeppelin/zeppelin.jceks\n#activeDirectoryRealm.searchBase = CN=Users,DC=HW,DC=TEST,DC=COM\n#activeDirectoryRealm.url = ldap://ad-nano.test.example.com:389\n#activeDirectoryRealm.groupRolesMap = \"\"\n#activeDirectoryRealm.authorizationCachingEnabled = true\n\n#ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm\n#ldapRealm.userDnTemplate = uid={0},cn=users,cn=accounts,dc=example,dc=com\n#ldapRealm.contextFactory.url = ldap://ldaphost:389\n#ldapRealm.contextFactory.authenticationMechanism = SIMPLE\n#sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager\n#securityManager.sessionManager = $sessionManager\n# 86,400,000 milliseconds = 24 hour\n#securityManager.sessionManager.globalSessionTimeout = 86400000\nshiro.loginUrl = /api/login\n\n[urls]\n# anon means the access is anonymous.\n# authcBasic means Basic Auth Security\n# To enfore security, comment the line below and uncomment the next one\n/api/version = anon\n/** = anon\n#/** = authc",
           "zeppelin.executor.instances" : "2",
           "zeppelin.server.kerberos.principal" : "",
           "zeppelin_env_content" : "\n# Spark master url. eg. spark://master_addr:7077. Leave empty if you want to use local mode\nexport MASTER=yarn-client\nexport SPARK_YARN_JAR={{spark_jar}}\n\n\n# Where log files are stored.  PWD by default.\nexport ZEPPELIN_LOG_DIR={{zeppelin_log_dir}}\n\n# The pid files are stored. /tmp by default.\nexport ZEPPELIN_PID_DIR={{zeppelin_pid_dir}}\n\n\nexport JAVA_HOME={{java64_home}}\n\n# Additional jvm options. for example, export ZEPPELIN_JAVA_OPTS=\"-Dspark.executor.memory=8g -Dspark.cores.max=16\"\nexport ZEPPELIN_JAVA_OPTS=\"-Dhdp.version={{full_stack_version}} -Dspark.executor.memory={{executor_mem}} -Dspark.executor.instances={{executor_instances}} -Dspark.yarn.queue={{spark_queue}}\"\n\n\n# Zeppelin jvm mem options Default -Xmx1024m -XX:MaxPermSize=512m\n# export ZEPPELIN_MEM\n\n# zeppelin interpreter process jvm mem options. Defualt = ZEPPELIN_MEM\n# export ZEPPELIN_INTP_MEM\n\n# zeppelin interpreter process jvm options. Default = ZEPPELIN_JAVA_OPTS\n# export ZEPPELIN_INTP_JAVA_OPTS\n\n# Where notebook saved\n# export ZEPPELIN_NOTEBOOK_DIR\n\n# Id of notebook to be displayed in homescreen. ex) 2A94M5J1Z\n# export ZEPPELIN_NOTEBOOK_HOMESCREEN\n\n# hide homescreen notebook from list when this value set to \"true\". default \"false\"\n# export ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE\n\n# Bucket where notebook saved\n# export ZEPPELIN_NOTEBOOK_S3_BUCKET\n\n# User in bucket where notebook saved. For example bucket/user/notebook/2A94M5J1Z/note.json\n# export ZEPPELIN_NOTEBOOK_S3_USER\n\n# A string representing this instance of zeppelin. $USER by default\n# export ZEPPELIN_IDENT_STRING\n\n# The scheduling priority for daemons. Defaults to 0.\n# export ZEPPELIN_NICENESS\n\n\n#### Spark interpreter configuration ####\n\n## Use provided spark installation ##\n## defining SPARK_HOME makes Zeppelin run spark interpreter process using spark-submit\n##\n# (required) When it is defined, load it instead of Zeppelin embedded Spark libraries\nexport SPARK_HOME={{spark_home}}\n\n# (optional) extra options to pass to spark submit. eg) \"--driver-memory 512M --executor-memory 1G\".\n# export SPARK_SUBMIT_OPTIONS\n\n## Use embedded spark binaries ##\n## without SPARK_HOME defined, Zeppelin still able to run spark interpreter process using embedded spark binaries.\n## however, it is not encouraged when you can define SPARK_HOME\n##\n# Options read in YARN client mode\n# yarn-site.xml is located in configuration directory in HADOOP_CONF_DIR.\nexport HADOOP_CONF_DIR=/etc/hadoop/conf\n\n# Pyspark (supported with Spark 1.2.1 and above)\n# To configure pyspark, you need to set spark distribution's path to 'spark.home' property in Interpreter setting screen in Zeppelin GUI\n# path to the python command. must be the same path on the driver(Zeppelin) and all workers.\n# export PYSPARK_PYTHON\n\nexport PYTHONPATH=\"${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-0.8.2.1-src.zip\"\nexport SPARK_YARN_USER_ENV=\"PYTHONPATH=${PYTHONPATH}\"\n\n## Spark interpreter options ##\n##\n# Use HiveContext instead of SQLContext if set true. true by default.\n# export ZEPPELIN_SPARK_USEHIVECONTEXT\n\n# Execute multiple SQL concurrently if set true. false by default.\n# export ZEPPELIN_SPARK_CONCURRENTSQL\n\n# Max number of SparkSQL result to display. 1000 by default.\n# export ZEPPELIN_SPARK_MAXRESULT",
@@ -507,7 +507,7 @@
         "properties" : {
           "oozie.service.ELService.ext.functions.workflow" : "\n      now=org.apache.oozie.extensions.OozieELExtensions#ph1_now_echo,\n      today=org.apache.oozie.extensions.OozieELExtensions#ph1_today_echo,\n      yesterday=org.apache.oozie.extensions.OozieELExtensions#ph1_yesterday_echo,\n      currentMonth=org.apache.oozie.extensions.OozieELExtensions#ph1_currentMonth_echo,\n      lastMonth=org.apache.oozie.extensions.OozieELExtensions#ph1_lastMonth_echo,\n      currentYear=org.apache.oozie.extensions.OozieELExtensions#ph1_currentYear_echo,\n      lastYear=org.apache.oozie.extensions.OozieELExtensions#ph1_lastYear_echo,\n      formatTime=org.apache.oozie.coord.CoordELFunctions#ph1_coord_formatTime_echo,\n      latest=org.apache.oozie.coord.CoordELFunctions#ph2_coord_latest_echo,\n      future=org.apache.oozie.coord.CoordELFunctions#ph2_coord_future_echo",
           "oozie.service.ELService.ext.functions.coord-action-create" : "\n      now=org.apache.oozie.extensions.OozieELExtensions#ph2_now,\n      today=org.apache.oozie.extensions.OozieELExtensions#ph2_today,\n      yesterday=org.apache.oozie.extensions.OozieELExtensions#ph2_yesterday,\n      currentWeek=org.apache.oozie.extensions.OozieELExtensions#ph2_currentWeek,\n      lastWeek=org.apache.oozie.extensions.OozieELExtensions#ph2_lastWeek,\n      currentMonth=org.apache.oozie.extensions.OozieELExtensions#ph2_currentMonth,\n      lastMonth=org.apache.oozie.extensions.OozieELExtensions#ph2_lastMonth,\n      currentYear=org.apache.oozie.extensions.OozieELExtensions#ph2_currentYear,\n      lastYear=org.apache.oozie.extensions.OozieELExtensions#ph2_lastYear,\n      latest=org.apache.oozie.coord.CoordELFunctions#ph2_coord_latest_echo,\n      future=org.apache.oozie.coord.CoordELFunctions#ph2_coord_future_echo,\n      formatTime=org.apache.oozie.coord.CoordELFunctions#ph2_coord_formatTime,\n      user=org.apache.oozie.coord.CoordELFunctions#coord_user",
-          "oozie.base.url" : "http://%HOSTGROUP::host_group_2%:11000/oozie",
+          "oozie.base.url" : "http://%HOSTGROUP::master_2%:11000/oozie",
           "oozie.service.ELService.ext.functions.coord-sla-create" : "\n      instanceTime=org.apache.oozie.coord.CoordELFunctions#ph2_coord_nominalTime,\n      user=org.apache.oozie.coord.CoordELFunctions#coord_user",
           "oozie.service.ProxyUserService.proxyuser.falcon.hosts" : "*",
           "oozie.service.ProxyUserService.proxyuser.falcon.groups" : "*",
@@ -745,7 +745,7 @@
       "application-properties" : {
         "properties_attributes" : { },
         "properties" : {
-          "atlas.audit.hbase.zookeeper.quorum" : "%HOSTGROUP::host_group_2%,tclu3master1.aws-test.local",
+          "atlas.audit.hbase.zookeeper.quorum" : "%HOSTGROUP::master_2%,master2.aws-test.local",
           "atlas.notification.create.topics" : "true",
           "atlas.graph.storage.hbase.table" : "atlas_titan",
           "atlas.solr.kerberos.enable" : "false",
@@ -755,7 +755,7 @@
           "atlas.kafka.zookeeper.connection.timeout.ms" : "200",
           "atlas.authentication.method.ldap.referral" : "ignore",
           "atlas.authentication.method.ldap.userDNpattern" : "uid=",
-          "atlas.rest.address" : "http://tclu3master1.aws-test.local:21000",
+          "atlas.rest.address" : "http://master2.aws-test.local:21000",
           "atlas.authentication.method.ldap.ad.user.searchfilter" : "(sAMAccountName={0})",
           "atlas.kafka.zookeeper.sync.time.ms" : "20",
           "atlas.authentication.method.ldap.base.dn" : "",
@@ -769,7 +769,7 @@
           "atlas.authentication.method.ldap.default.role" : "ROLE_USER",
           "atlas.kafka.auto.commit.enable" : "false",
           "atlas.kafka.hook.group.id" : "atlas",
-          "atlas.kafka.bootstrap.servers" : "%HOSTGROUP::host_group_1%:6667",
+          "atlas.kafka.bootstrap.servers" : "%HOSTGROUP::master_1%:6667",
           "atlas.authentication.method.ldap.bind.dn" : "",
           "atlas.authentication.method.ldap.ad.url" : "",
           "atlas.authentication.method.ldap.ad.bind.dn" : "",
@@ -782,12 +782,12 @@
           "atlas.notification.replicas" : "1",
           "atlas.authentication.principal" : "atlas",
           "atlas.enableTLS" : "false",
-          "atlas.graph.index.search.solr.zookeeper-url" : "tclu3master1.aws-test.local:2181/infra-solr,%HOSTGROUP::host_group_2%:2181/infra-solr",
+          "atlas.graph.index.search.solr.zookeeper-url" : "%HOSTGROUP::master_2%:2181/infra-solr,master2.aws-test.local:2181/infra-solr",
           "atlas.kafka.zookeeper.session.timeout.ms" : "400",
           "atlas.graph.index.search.solr.mode" : "cloud",
-          "atlas.kafka.zookeeper.connect" : "%HOSTGROUP::host_group_2%:2181,tclu3master1.aws-test.local:2181",
+          "atlas.kafka.zookeeper.connect" : "%HOSTGROUP::master_2%:2181,master2.aws-test.local:2181",
           "atlas.authentication.method.kerberos" : "false",
-          "atlas.graph.storage.hostname" : "%HOSTGROUP::host_group_2%,tclu3master1.aws-test.local",
+          "atlas.graph.storage.hostname" : "%HOSTGROUP::master_2%,master2.aws-test.local",
           "atlas.authentication.method.ldap.groupSearchBase" : "",
           "atlas.notification.embedded" : "false",
           "atlas.graph.index.search.backend" : "solr5",
@@ -1078,7 +1078,7 @@
           "drpc.childopts" : "-Xmx768m _JAAS_PLACEHOLDER",
           "logviewer.childopts" : "-Xmx128m _JAAS_PLACEHOLDER",
           "nimbus.task.launch.secs" : "120",
-          "storm.zookeeper.servers" : "['%HOSTGROUP::host_group_1%','%HOSTGROUP::host_group_2%']",
+          "storm.zookeeper.servers" : "['%HOSTGROUP::master_2%','%HOSTGROUP::master_1%']",
           "storm.messaging.transport" : "org.apache.storm.messaging.netty.Context",
           "topology.workers" : "1",
           "drpc.invocations.port" : "3773",
@@ -1116,7 +1116,7 @@
           "nimbus.thrift.port" : "6627",
           "nimbus.thrift.threads" : "196",
           "_storm.thrift.nonsecure.transport" : "org.apache.storm.security.auth.SimpleTransportPlugin",
-          "nimbus.seeds" : "['%HOSTGROUP::host_group_1%']",
+          "nimbus.seeds" : "['%HOSTGROUP::master_1%']",
           "topology.min.replication.count" : "{{actual_topology_min_replication_count}}",
           "topology.worker.childopts" : "null",
           "topology.max.replication.wait.time.sec" : "{{actual_topology_max_replication_wait_time_sec}}",
@@ -1272,7 +1272,7 @@
           "hive.vectorized.execution.mapjoin.native.enabled" : "true",
           "hive.metastore.event.listeners" : "",
           "hive.server2.tez.default.queues" : "default",
-          "hive.llap.zk.sm.connectionString" : "%HOSTGROUP::host_group_1%:2181,%HOSTGROUP::host_group_2%:2181",
+          "hive.llap.zk.sm.connectionString" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "hive.server2.tez.sessions.per.default.queue" : "1",
           "hive.server2.webui.use.ssl" : "false",
           "hive.llap.management.rpc.port" : "15004",
@@ -1478,14 +1478,14 @@
           "zookeeper.recovery.retry" : "6",
           "hbase.hstore.compaction.max" : "10",
           "hbase.regionserver.global.memstore.size" : "0.4",
-          "hbase.zookeeper.quorum" : "%HOSTGROUP::host_group_2%,%HOSTGROUP::host_group_1%",
+          "hbase.zookeeper.quorum" : "%HOSTGROUP::master_2%,%HOSTGROUP::master_1%",
           "hbase.regionserver.info.port" : "16030",
           "hbase.client.keyvalue.maxsize" : "1048576",
           "hbase.tmp.dir" : "/tmp/hbase-${user.name}",
           "hbase.rpc.protection" : "authentication",
           "zookeeper.znode.parent" : "/hbase-unsecure",
           "hbase.master.info.port" : "16010",
-          "hbase.rootdir" : "hdfs://%HOSTGROUP::host_group_1%:8020/apps/hbase/data",
+          "hbase.rootdir" : "hdfs://%HOSTGROUP::master_2%:8020/apps/hbase/data",
           "hbase.client.scanner.caching" : "100",
           "hbase.cluster.distributed" : "true",
           "hbase.hregion.majorcompaction" : "604800000",
@@ -1671,8 +1671,8 @@
           "dfs.namenode.avoid.read.stale.datanode" : "true",
           "dfs.journalnode.http-address" : "0.0.0.0:8480",
           "nfs.file.dump.dir" : "/tmp/.hdfs-nfs",
-          "dfs.namenode.rpc-address" : "%HOSTGROUP::host_group_1%:8020",
-          "dfs.namenode.https-address" : "%HOSTGROUP::host_group_1%:50470",
+          "dfs.namenode.rpc-address" : "%HOSTGROUP::master_2%:8020",
+          "dfs.namenode.https-address" : "%HOSTGROUP::master_2%:50470",
           "dfs.encrypt.data.transfer.cipher.suites" : "AES/CTR/NoPadding",
           "dfs.client.read.shortcircuit.streams.cache.size" : "4096",
           "dfs.hosts.exclude" : "/etc/hadoop/conf/dfs.exclude",
@@ -1694,7 +1694,7 @@
           "dfs.replication.max" : "50",
           "dfs.client.read.shortcircuit" : "true",
           "dfs.webhdfs.enabled" : "true",
-          "dfs.namenode.http-address" : "%HOSTGROUP::host_group_1%:50070",
+          "dfs.namenode.http-address" : "%HOSTGROUP::master_2%:50070",
           "dfs.namenode.name.dir" : "/hadoop/hdfs/namenode",
           "dfs.namenode.avoid.write.stale.datanode" : "true",
           "dfs.datanode.https.address" : "0.0.0.0:50475",
@@ -1713,7 +1713,7 @@
           "dfs.namenode.write.stale.datanode.ratio" : "1.0f",
           "dfs.namenode.name.dir.restore" : "true",
           "dfs.heartbeat.interval" : "3",
-          "dfs.namenode.secondary.http-address" : "%HOSTGROUP::host_group_2%:50090",
+          "dfs.namenode.secondary.http-address" : "%HOSTGROUP::master_1%:50090",
           "dfs.namenode.checkpoint.txns" : "1000000",
           "dfs.journalnode.edits.dir" : "/hadoop/hdfs/journalnode",
           "dfs.support.append" : "true",
@@ -1756,7 +1756,7 @@
       "yarn-site" : {
         "properties_attributes" : { },
         "properties" : {
-          "yarn.resourcemanager.zk-address" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "yarn.resourcemanager.zk-address" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "yarn.nodemanager.container-monitor.interval-ms" : "3000",
           "yarn.timeline-service.entity-group-fs-store.active-dir" : "/ats/active/",
           "yarn.nodemanager.linux-container-executor.group" : "hadoop",
@@ -1765,10 +1765,10 @@
           "yarn.timeline-service.entity-group-fs-store.cleaner-interval-seconds" : "3600",
           "yarn.nodemanager.remote-app-log-dir-suffix" : "logs",
           "yarn.nodemanager.address" : "0.0.0.0:45454",
-          "yarn.resourcemanager.webapp.address" : "%HOSTGROUP::host_group_2%:8088",
+          "yarn.resourcemanager.webapp.address" : "%HOSTGROUP::master_2%:8088",
           "yarn.timeline-service.leveldb-timeline-store.ttl-interval-ms" : "300000",
           "yarn.scheduler.maximum-allocation-vcores" : "3",
-          "yarn.timeline-service.address" : "%HOSTGROUP::host_group_2%:10200",
+          "yarn.timeline-service.address" : "%HOSTGROUP::master_2%:10200",
           "yarn.timeline-service.enabled" : "true",
           "yarn.nodemanager.aux-services" : "mapreduce_shuffle,spark_shuffle,spark2_shuffle",
           "yarn.nodemanager.resource.cpu-vcores" : "3",
@@ -1781,9 +1781,9 @@
           "yarn.timeline-service.http-authentication.simple.anonymous.allowed" : "true",
           "yarn.resourcemanager.zk-state-store.parent-path" : "/rmstore",
           "yarn.timeline-service.leveldb-timeline-store.start-time-read-cache-size" : "10000",
-          "yarn.resourcemanager.admin.address" : "%HOSTGROUP::host_group_2%:8141",
+          "yarn.resourcemanager.admin.address" : "%HOSTGROUP::master_2%:8141",
           "yarn.nodemanager.linux-container-executor.cgroups.strict-resource-usage" : "false",
-          "yarn.resourcemanager.resource-tracker.address" : "%HOSTGROUP::host_group_2%:8025",
+          "yarn.resourcemanager.resource-tracker.address" : "%HOSTGROUP::master_2%:8025",
           "yarn.nodemanager.delete.debug-delay-sec" : "0",
           "yarn.resourcemanager.fs.state-store.retry-policy-spec" : "2000, 500",
           "yarn.timeline-service.http-authentication.type" : "simple",
@@ -1802,7 +1802,7 @@
           "yarn.resourcemanager.system-metrics-publisher.enabled" : "true",
           "yarn.timeline-service.client.max-retries" : "30",
           "yarn.timeline-service.client.retry-interval-ms" : "1000",
-          "yarn.timeline-service.http-authentication.proxyuser.root.hosts" : "tclu3EDGENODE.aws-test.local",
+          "yarn.timeline-service.http-authentication.proxyuser.root.hosts" : "edge.aws-test.local",
           "yarn.timeline-service.store-class" : "org.apache.hadoop.yarn.server.timeline.EntityGroupFSTimelineStore",
           "yarn.timeline-service.bind-host" : "0.0.0.0",
           "yarn.nodemanager.container-metrics.unregister-delay-ms" : "60000",
@@ -1811,14 +1811,14 @@
           "yarn.nodemanager.linux-container-executor.cgroups.hierarchy" : "hadoop-yarn",
           "yarn.resourcemanager.recovery.enabled" : "true",
           "yarn.timeline-service.entity-group-fs-store.group-id-plugin-classpath" : "/usr/hdp/${hdp.version}/spark/hdpLib/*",
-          "yarn.resourcemanager.scheduler.address" : "%HOSTGROUP::host_group_2%:8030",
+          "yarn.resourcemanager.scheduler.address" : "%HOSTGROUP::master_2%:8030",
           "yarn.timeline-service.leveldb-timeline-store.start-time-write-cache-size" : "10000",
           "yarn.timeline-service.ttl-ms" : "2678400000",
           "yarn.nodemanager.health-checker.script.timeout-ms" : "60000",
           "yarn.nodemanager.aux-services.spark2_shuffle.class" : "org.apache.spark.network.yarn.YarnShuffleService",
-          "yarn.log.server.url" : "http://%HOSTGROUP::host_group_2%:19888/jobhistory/logs",
+          "yarn.log.server.url" : "http://%HOSTGROUP::master_2%:19888/jobhistory/logs",
           "yarn.timeline-service.entity-group-fs-store.group-id-plugin-classes" : "org.apache.tez.dag.history.logging.ats.TimelineCachePluginImpl,org.apache.spark.deploy.history.yarn.plugin.SparkATSPlugin",
-          "yarn.resourcemanager.address" : "%HOSTGROUP::host_group_2%:8050",
+          "yarn.resourcemanager.address" : "%HOSTGROUP::master_2%:8050",
           "yarn.timeline-service.recovery.enabled" : "true",
           "yarn.nodemanager.recovery.dir" : "{{yarn_log_dir_prefix}}/nodemanager/recovery-state",
           "yarn.resourcemanager.scheduler.monitor.enable" : "false",
@@ -1851,15 +1851,15 @@
           "yarn.timeline-service.leveldb-state-store.path" : "/hadoop/yarn/timeline",
           "yarn.timeline-service.entity-group-fs-store.done-dir" : "/ats/done/",
           "yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage" : "90",
-          "hadoop.registry.zk.quorum" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "hadoop.registry.zk.quorum" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "yarn.nodemanager.log-aggregation.roll-monitoring-interval-seconds" : "3600",
           "yarn.nodemanager.container-executor.class" : "org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor",
           "yarn.resourcemanager.nodes.exclude-path" : "/etc/hadoop/conf/yarn.exclude",
           "yarn.timeline-service.state-store-class" : "org.apache.hadoop.yarn.server.timeline.recovery.LeveldbTimelineStateStore",
           "yarn.nodemanager.bind-host" : "0.0.0.0",
-          "yarn.resourcemanager.hostname" : "%HOSTGROUP::host_group_2%",
+          "yarn.resourcemanager.hostname" : "%HOSTGROUP::master_2%",
           "yarn.resourcemanager.connect.retry-interval.ms" : "30000",
-          "yarn.timeline-service.webapp.address" : "%HOSTGROUP::host_group_2%:8188",
+          "yarn.timeline-service.webapp.address" : "%HOSTGROUP::master_2%:8188",
           "yarn.scheduler.minimum-allocation-mb" : "1024",
           "yarn.timeline-service.entity-group-fs-store.summary-store" : "org.apache.hadoop.yarn.server.timeline.RollingLevelDBTimelineStore",
           "yarn.nodemanager.health-checker.interval-ms" : "135000",
@@ -1869,8 +1869,8 @@
           "yarn.scheduler.maximum-allocation-mb" : "8192",
           "yarn.nodemanager.vmem-check-enabled" : "false",
           "yarn.timeline-service.entity-group-fs-store.scan-interval-seconds" : "60",
-          "yarn.resourcemanager.webapp.https.address" : "%HOSTGROUP::host_group_2%:8090",
-          "yarn.timeline-service.webapp.https.address" : "%HOSTGROUP::host_group_2%:8190",
+          "yarn.resourcemanager.webapp.https.address" : "%HOSTGROUP::master_2%:8090",
+          "yarn.timeline-service.webapp.https.address" : "%HOSTGROUP::master_2%:8190",
           "yarn.nodemanager.resource.percentage-physical-cpu-limit" : "80",
           "yarn.nodemanager.vmem-pmem-ratio" : "2.1",
           "yarn.nodemanager.log-aggregation.compression-type" : "gz",
@@ -2009,13 +2009,13 @@
           "tserver.walog.max.size" : "1G",
           "gc.port.client" : "50092",
           "instance.zookeeper.timeout" : "30s",
-          "instance.zookeeper.host" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "instance.zookeeper.host" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "monitor.port.client" : "50095",
           "tserver.cache.data.size" : "128M",
           "tserver.port.client" : "9997",
           "tserver.cache.index.size" : "256M",
           "general.classpaths" : "\n$ACCUMULO_HOME/lib/accumulo-server.jar,\n$ACCUMULO_HOME/lib/accumulo-core.jar,\n$ACCUMULO_HOME/lib/accumulo-start.jar,\n$ACCUMULO_HOME/lib/accumulo-fate.jar,\n$ACCUMULO_HOME/lib/accumulo-proxy.jar,\n$ACCUMULO_HOME/lib/[^.].*.jar,\n$ZOOKEEPER_HOME/zookeeper[^.].*.jar,\n$HADOOP_CONF_DIR,\n/usr/hdp/current/hadoop-client/[^.].*.jar,\n/usr/hdp/current/hadoop-client/lib/(?!slf4j)[^.].*.jar,\n/usr/hdp/current/hadoop-hdfs-client/[^.].*.jar,\n/usr/hdp/current/hadoop-mapreduce-client/[^.].*.jar,\n/usr/hdp/current/hadoop-yarn-client/[^.].*.jar,\n/usr/hdp/current/hadoop-yarn-client/lib/jersey.*.jar,\n/usr/hdp/current/hive-client/lib/hive-accumulo-handler.jar",
-          "instance.volumes" : "hdfs://%HOSTGROUP::host_group_1%:8020/apps/accumulo/data",
+          "instance.volumes" : "hdfs://%HOSTGROUP::master_2%:8020/apps/accumulo/data",
           "monitor.port.log4j" : "4560"
         }
       }
@@ -2174,7 +2174,7 @@
           "timeline.metrics.service.watcher.timeout" : "30",
           "timeline.metrics.service.checkpointDelay" : "60",
           "timeline.metrics.cluster.aggregator.second.interval" : "120",
-          "timeline.metrics.service.webapp.address" : "%HOSTGROUP::host_group_2%:6188",
+          "timeline.metrics.service.webapp.address" : "%HOSTGROUP::master_1%:6188",
           "timeline.metrics.host.aggregator.daily.ttl" : "31536000",
           "timeline.metrics.service.watcher.delay" : "30",
           "timeline.metrics.service.watcher.disabled" : "false",
@@ -2257,7 +2257,7 @@
           "mapreduce.task.io.sort.mb" : "859",
           "mapreduce.cluster.administrators" : " hadoop",
           "mapreduce.reduce.shuffle.fetch.retry.timeout-ms" : "30000",
-          "mapreduce.jobhistory.address" : "%HOSTGROUP::host_group_2%:10020",
+          "mapreduce.jobhistory.address" : "%HOSTGROUP::master_2%:10020",
           "mapreduce.map.sort.spill.percent" : "0.7",
           "mapreduce.map.memory.mb" : "1536",
           "mapreduce.admin.reduce.child.java.opts" : "-server -XX:NewRatio=8 -Djava.net.preferIPv4Stack=true -Dhdp.version=${hdp.version}",
@@ -2269,7 +2269,7 @@
           "mapreduce.framework.name" : "yarn",
           "mapreduce.reduce.shuffle.parallelcopies" : "30",
           "mapreduce.jobhistory.done-dir" : "/mr-history/done",
-          "mapreduce.jobhistory.webapp.address" : "%HOSTGROUP::host_group_2%:19888",
+          "mapreduce.jobhistory.webapp.address" : "%HOSTGROUP::master_2%:19888",
           "mapreduce.reduce.shuffle.fetch.retry.enabled" : "1",
           "mapreduce.task.io.sort.factor" : "100",
           "mapreduce.jobhistory.recovery.store.leveldb.path" : "/hadoop/mapreduce/jhs",
@@ -2367,7 +2367,7 @@
           "hive.tez.dynamic.partition.pruning.max.data.size" : "104857600",
           "hive.compactor.initiator.on" : "false",
           "hive.smbjoin.cache.rows" : "10000",
-          "atlas.rest.address" : "http://%HOSTGROUP::host_group_1%:21000",
+          "atlas.rest.address" : "http://%HOSTGROUP::master_1%:21000",
           "hive.exec.max.dynamic.partitions" : "5000",
           "hive.auto.convert.join" : "true",
           "hive.server2.support.dynamic.service.discovery" : "true",
@@ -2383,7 +2383,7 @@
           "hive.metastore.execute.setugi" : "true",
           "hive.tez.smb.number.waves" : "0.5",
           "hive.server2.authentication.spnego.keytab" : "HTTP/_HOST@EXAMPLE.COM",
-          "hive.zookeeper.quorum" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "hive.zookeeper.quorum" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "hive.mapjoin.bucket.cache.size" : "10000",
           "hive.metastore.kerberos.principal" : "hive/_HOST@EXAMPLE.COM",
           "hive.tez.auto.reducer.parallelism" : "true",
@@ -2450,8 +2450,8 @@
           "hive.metastore.connect.retries" : "24",
           "hive.optimize.reducededuplication.min.reducer" : "4",
           "hive.tez.input.format" : "org.apache.hadoop.hive.ql.io.HiveInputFormat",
-          "hive.cluster.delegation.token.store.zookeeper.connectString" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
-          "hive.metastore.uris" : "thrift://%HOSTGROUP::host_group_2%:9083",
+          "hive.cluster.delegation.token.store.zookeeper.connectString" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
+          "hive.metastore.uris" : "thrift://%HOSTGROUP::master_2%:9083",
           "hive.server2.max.start.attempts" : "5",
           "hive.exec.dynamic.partition.mode" : "strict",
           "hive.server2.thrift.max.worker.threads" : "500",
@@ -2473,7 +2473,7 @@
           "hive.server2.tez.sessions.per.default.queue" : "1",
           "hive.server2.thrift.http.port" : "10001",
           "hive.server2.logging.operation.log.location" : "/tmp/hive/operation_logs",
-          "javax.jdo.option.ConnectionURL" : "jdbc:mysql://%HOSTGROUP::host_group_2%/hive?createDatabaseIfNotExist=true",
+          "javax.jdo.option.ConnectionURL" : "jdbc:mysql://%HOSTGROUP::master_2%/hive?createDatabaseIfNotExist=true",
           "hive.map.aggr.hash.min.reduction" : "0.5",
           "hive.merge.size.per.task" : "256000000",
           "hive.merge.smallfiles.avgsize" : "16000000",
@@ -2577,15 +2577,15 @@
       "webhcat-site" : {
         "properties_attributes" : { },
         "properties" : {
-          "templeton.zookeeper.hosts" : "%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_1%:2181",
+          "templeton.zookeeper.hosts" : "%HOSTGROUP::master_2%:2181,%HOSTGROUP::master_1%:2181",
           "webhcat.proxyuser.root.groups" : "*",
-          "webhcat.proxyuser.root.hosts" : "tclu3EDGENODE.aws-test.local",
+          "webhcat.proxyuser.root.hosts" : "edge.aws-test.local",
           "templeton.hadoop.queue.name" : "default",
           "templeton.hadoop" : "/usr/hdp/${hdp.version}/hadoop/bin/hadoop",
           "templeton.hive.extra.files" : "/usr/hdp/${hdp.version}/tez/conf/tez-site.xml,/usr/hdp/${hdp.version}/tez,/usr/hdp/${hdp.version}/tez/lib",
           "templeton.hcat.home" : "hive.tar.gz/hive/hcatalog",
           "templeton.override.enabled" : "false",
-          "templeton.hive.properties" : "hive.metastore.local=false,hive.metastore.uris=thrift://%HOSTGROUP::host_group_2%:9083,hive.metastore.sasl.enabled=false,hive.metastore.execute.setugi=true",
+          "templeton.hive.properties" : "hive.metastore.local=false,hive.metastore.uris=thrift://%HOSTGROUP::master_2%:9083,hive.metastore.sasl.enabled=false,hive.metastore.execute.setugi=true",
           "templeton.python" : "${env.PYTHON_CMD}",
           "templeton.storage.class" : "org.apache.hive.hcatalog.templeton.tool.ZooKeeperStorage",
           "templeton.streaming.jar" : "hdfs:///hdp/apps/${hdp.version}/mapreduce/hadoop-streaming.jar",
@@ -2822,6 +2822,9 @@
     {
       "components" : [
         {
+          "name" : "LIVY_SERVER"
+        },
+        {
           "name" : "HIVE_SERVER"
         },
         {
@@ -2832,6 +2835,9 @@
         },
         {
           "name" : "INFRA_SOLR_CLIENT"
+        },
+        {
+          "name" : "HBASE_MASTER"
         },
         {
           "name" : "HIVE_METASTORE"
@@ -2849,127 +2855,9 @@
           "name" : "WEBHCAT_SERVER"
         },
         {
-          "name" : "SECONDARY_NAMENODE"
-        },
-        {
-          "name" : "HST_AGENT"
-        },
-        {
-          "name" : "SLIDER"
-        },
-        {
-          "name" : "ACCUMULO_CLIENT"
-        },
-        {
-          "name" : "ZOOKEEPER_SERVER"
-        },
-        {
-          "name" : "OOZIE_CLIENT"
-        },
-        {
-          "name" : "METRICS_COLLECTOR"
-        },
-        {
-          "name" : "MAHOUT"
-        },
-        {
-          "name" : "SPARK_CLIENT"
-        },
-        {
-          "name" : "YARN_CLIENT"
-        },
-        {
-          "name" : "HDFS_CLIENT"
-        },
-        {
-          "name" : "FALCON_CLIENT"
-        },
-        {
-          "name" : "SQOOP"
-        },
-        {
-          "name" : "MYSQL_SERVER"
-        },
-        {
-          "name" : "HISTORYSERVER"
-        },
-        {
-          "name" : "ZEPPELIN_MASTER"
-        },
-        {
-          "name" : "PIG"
-        },
-        {
-          "name" : "MAPREDUCE2_CLIENT"
-        },
-        {
-          "name" : "ATLAS_CLIENT"
-        },
-        {
-          "name" : "HBASE_CLIENT"
-        },
-        {
-          "name" : "FALCON_SERVER"
-        },
-        {
-          "name" : "OOZIE_SERVER"
-        },
-        {
-          "name" : "APP_TIMELINE_SERVER"
-        },
-        {
-          "name" : "HIVE_CLIENT"
-        },
-        {
-          "name" : "RESOURCEMANAGER"
-        }
-      ],
-      "configurations" : [ ],
-      "name" : "master_2",
-      "cardinality" : "1"
-    },
-    {
-      "components" : [
-        {
-          "name" : "SPARK2_CLIENT"
-        },
-        {
-          "name" : "METRICS_MONITOR"
-        },
-        {
-          "name" : "INFRA_SOLR_CLIENT"
-        },
-        {
-          "name" : "ACCUMULO_GC"
-        },
-        {
-          "name" : "HBASE_MASTER"
-        },
-        {
-          "name" : "TEZ_CLIENT"
-        },
-        {
-          "name" : "ATLAS_SERVER"
-        },
-        {
-          "name" : "ZOOKEEPER_CLIENT"
-        },
-        {
-          "name" : "KNOX_GATEWAY"
-        },
-        {
-          "name" : "HCAT"
-        },
-        {
-          "name" : "SPARK2_JOBHISTORYSERVER"
-        },
-        {
           "name" : "ACTIVITY_ANALYZER"
         },
         {
-          "name" : "KAFKA_BROKER"
-        },
-        {
           "name" : "HST_AGENT"
         },
         {
@@ -2985,16 +2873,13 @@
           "name" : "OOZIE_CLIENT"
         },
         {
-          "name" : "DRPC_SERVER"
+          "name" : "SPARK_THRIFTSERVER"
         },
         {
-          "name" : "METRICS_GRAFANA"
+          "name" : "PHOENIX_QUERY_SERVER"
         },
         {
           "name" : "MAHOUT"
-        },
-        {
-          "name" : "ACCUMULO_MONITOR"
         },
         {
           "name" : "SPARK_CLIENT"
@@ -3010,21 +2895,21 @@
         },
         {
           "name" : "SQOOP"
-        },
-        {
-          "name" : "ACCUMULO_TRACER"
         },
         {
           "name" : "HST_SERVER"
         },
         {
-          "name" : "STORM_UI_SERVER"
+          "name" : "MYSQL_SERVER"
+        },
+        {
+          "name" : "SPARK2_THRIFTSERVER"
+        },
+        {
+          "name" : "HISTORYSERVER"
         },
         {
           "name" : "NAMENODE"
-        },
-        {
-          "name" : "NIMBUS"
         },
         {
           "name" : "PIG"
@@ -3045,17 +2930,26 @@
           "name" : "HBASE_CLIENT"
         },
         {
-          "name" : "INFRA_SOLR"
+          "name" : "FALCON_SERVER"
         },
         {
           "name" : "SPARK_JOBHISTORYSERVER"
         },
         {
+          "name" : "OOZIE_SERVER"
+        },
+        {
+          "name" : "APP_TIMELINE_SERVER"
+        },
+        {
           "name" : "HIVE_CLIENT"
+        },
+        {
+          "name" : "RESOURCEMANAGER"
         }
       ],
       "configurations" : [ ],
-      "name" : "master_1",
+      "name" : "master_2",
       "cardinality" : "1"
     },
     {
@@ -3088,6 +2982,136 @@
       "configurations" : [ ],
       "name" : "data_nodes",
       "cardinality" : "2"
+    },
+    {
+      "components" : [
+        {
+          "name" : "LIVY_SERVER"
+        },
+        {
+          "name" : "SPARK2_CLIENT"
+        },
+        {
+          "name" : "METRICS_MONITOR"
+        },
+        {
+          "name" : "INFRA_SOLR_CLIENT"
+        },
+        {
+          "name" : "ACCUMULO_GC"
+        },
+        {
+          "name" : "TEZ_CLIENT"
+        },
+        {
+          "name" : "ATLAS_SERVER"
+        },
+        {
+          "name" : "ZOOKEEPER_CLIENT"
+        },
+        {
+          "name" : "KNOX_GATEWAY"
+        },
+        {
+          "name" : "HCAT"
+        },
+        {
+          "name" : "SPARK2_JOBHISTORYSERVER"
+        },
+        {
+          "name" : "KAFKA_BROKER"
+        },
+        {
+          "name" : "SECONDARY_NAMENODE"
+        },
+        {
+          "name" : "HST_AGENT"
+        },
+        {
+          "name" : "SLIDER"
+        },
+        {
+          "name" : "ACCUMULO_CLIENT"
+        },
+        {
+          "name" : "ZOOKEEPER_SERVER"
+        },
+        {
+          "name" : "OOZIE_CLIENT"
+        },
+        {
+          "name" : "SPARK_THRIFTSERVER"
+        },
+        {
+          "name" : "DRPC_SERVER"
+        },
+        {
+          "name" : "METRICS_COLLECTOR"
+        },
+        {
+          "name" : "METRICS_GRAFANA"
+        },
+        {
+          "name" : "PHOENIX_QUERY_SERVER"
+        },
+        {
+          "name" : "MAHOUT"
+        },
+        {
+          "name" : "ACCUMULO_MONITOR"
+        },
+        {
+          "name" : "SPARK_CLIENT"
+        },
+        {
+          "name" : "YARN_CLIENT"
+        },
+        {
+          "name" : "HDFS_CLIENT"
+        },
+        {
+          "name" : "FALCON_CLIENT"
+        },
+        {
+          "name" : "SQOOP"
+        },
+        {
+          "name" : "ACCUMULO_TRACER"
+        },
+        {
+          "name" : "SPARK2_THRIFTSERVER"
+        },
+        {
+          "name" : "STORM_UI_SERVER"
+        },
+        {
+          "name" : "ZEPPELIN_MASTER"
+        },
+        {
+          "name" : "NIMBUS"
+        },
+        {
+          "name" : "PIG"
+        },
+        {
+          "name" : "MAPREDUCE2_CLIENT"
+        },
+        {
+          "name" : "ATLAS_CLIENT"
+        },
+        {
+          "name" : "HBASE_CLIENT"
+        },
+        {
+          "name" : "INFRA_SOLR"
+        },
+        {
+          "name" : "HIVE_CLIENT"
+        }
+      ],
+      "configurations" : [ ],
+      "name" : "master_1",
+      "cardinality" : "1"
     }
   ],
   "Blueprints" : {
@@ -3095,4 +3119,3 @@
     "stack_version" : "2.5"
   }
 }
-

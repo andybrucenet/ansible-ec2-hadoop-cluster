@@ -71,6 +71,7 @@ while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::h FLAG
     l) DATAINSTANCETYPE="$OPTARG" ;;
     z) DATAVOLUMESIZE="$OPTARG" ;;
     c) DATACOUNT="$OPTARG" ;;
+    b) BLUEPRINT="$OPTARG" ;;
     h)
       cat << EOF
 Usage:
@@ -96,6 +97,7 @@ Options:
   -l - EC2 instance type for DATA node(s)
   -z - EC2 volume size (GB) to attach to each DATA node
   -c - Number of EC2 DATA node(s)
+  -b - Name of the blueprint (assumed in 'blueprints' folder)
 EOF
       exit 0;;
     *) echo "Invalid option '$FLAG'" ; exit 1 ;;
@@ -185,6 +187,10 @@ DATACOUNT=$(read_entry 'Enter DATA Node Count' '' "$DATACOUNT" '2')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
+BLUEPRINT=$(read_entry 'Enter BLUEPRINT file name' '' "$BLUEPRINT" 'hdp-2-5-m1-m2-data')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
 # confirm
 CONFTEXT="You are about to deploy a new cluster with the following properties:"
 CONFTEXT="$CONFTEXT\n\nAWS_REGION=$AWS_REGION"
@@ -206,6 +212,7 @@ CONFTEXT="$CONFTEXT\nMASTER Instance Type=$MASTERINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Instance Type=$DATAINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Volume Size=$DATAVOLUMESIZE"
 CONFTEXT="$CONFTEXT\nDATA Node Count=$DATACOUNT"
+CONFTEXT="$CONFTEXT\nBLUEPRINT=$BLUEPRINT"
 CONFTEXT="$CONFTEXT\n\nPress [OK] to continue or [Ctrl+C] to cancel"
 echo -n -e "$CONFTEXT"
 read OK_PROMPT
@@ -218,7 +225,7 @@ l_ansible_sudo_flags='-H -S'
 
 # create instances
 echo "Create instances..."
-echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
+ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 AWS_REGION=$AWS_REGION \
 AWS_REGION_AZ=$AWS_REGION_AZ \
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -238,22 +245,26 @@ MASTERNODETYPE=$MASTERINSTANCETYPE \
 DATANODETYPE=$DATAINSTANCETYPE \
 NUMNODES=$DATACOUNT \
 EBSVOLSIZE=$DATAVOLUMESIZE \
+BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
+TOPFOLDER="$PWD" \
 ansible-playbook -v ./ansible/create-instances.yml
 echo ''
 
 # configure cluster
 echo "Configure cluster"
-echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
+ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 HDPCLUSTERNAME=$HDPCLUSTERNAME \
 HDPDOMAINNAME=$HDPDOMAINNAME \
 AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
 PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 NUMNODES=$DATACOUNT \
+BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
+TOPFOLDER="$PWD" \
 ansible-playbook -v -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/configure-cluster.yml
 echo ''
 
