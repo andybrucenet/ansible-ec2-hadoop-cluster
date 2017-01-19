@@ -1,7 +1,7 @@
 {
   "blueprint":"{{ blueprint }}.blueprint",
-  "default_password": "34ab12cd",
-  "provision_action" : "INSTALL_AND_START",
+  "default_password": "34ab12CD",
+  "provision_action" : "INSTALL_ONLY",
   "host_groups": [
     {
       "name":"master_1",
@@ -16,6 +16,15 @@
       "name":"master_2",
       "hosts":[
 {% for node in groups['master2'] %}
+        {"fqdn":"{{ hostvars[node].hostnameinternal }}.{{ domainname }}"}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+      ]
+    },
+    {
+      "name":"tools_nodes",
+      "hosts":[
+{% for node in groups['tools'] %}
         {"fqdn":"{{ hostvars[node].hostnameinternal }}.{{ domainname }}"}{% if not loop.last %},{% endif %}
 
 {% endfor %}

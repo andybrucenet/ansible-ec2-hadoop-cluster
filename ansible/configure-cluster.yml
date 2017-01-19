@@ -37,7 +37,7 @@
     lineinfile: dest=/etc/ssh/ssh_config insertafter=EOF line="Host *\n\tIdentityFile /home/{{ ssh_login }}/{{ pemkey_name }}"
     
   - name: Copying hosts file to instance
-    copy: src="~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts" dest=/etc/hosts  
+    copy: src="~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts" dest=/etc/hosts  
 
   - name: Create hostname in /etc/hostname
     lineinfile: dest=/etc/hostname state=present create=yes regexp='.*' line="{{ hostnameinternal }}.{{ domainname }}"
@@ -169,7 +169,7 @@
 #
 # Configure Ambari Agent on all Nodes
 #    
-- hosts: master:data
+- hosts: master:data:tools
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -203,7 +203,7 @@
 
   tasks:
   - name: Wait for Ambari agents to register
-    shell: sh -c "l_hosts=$(curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X GET -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/hosts | jq '.items | length') ; [[ l_hosts -eq {{ number_of_nodes }}+3 ]] && true"
+    shell: sh -c "l_hosts=$(curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X GET -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/hosts | jq '.items | length') ; [[ l_hosts -eq {{ number_of_nodes }}+4 ]] && true"
     register: wait_ambari_agents
     until: wait_ambari_agents.rc == 0
     retries: 20

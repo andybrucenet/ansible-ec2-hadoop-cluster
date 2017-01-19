@@ -233,7 +233,7 @@
     shell: truncate -s 0 ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes 
 
   - name: Initialize hdp.hosts file
-    shell: echo -e "127.0.0.1\tlocalhost" > ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts 
+    shell: echo -e "127.0.0.1\tlocalhost" > ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts 
       
 #
 # Create Edge Node        
@@ -265,7 +265,7 @@
     shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ ec2_edgenode.instances[0].public_dns_name }} --hostname-internal=edge --groups edge allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     
   - name: Add edge node to hdp.hosts file
-    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tedge.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tedge.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     
 #
 # Create Master Nodes
@@ -299,8 +299,43 @@
     with_indexed_items: "{{ ec2_masters.results }}"
     
   - name: Add master nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\tmaster{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tmaster{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     with_indexed_items: "{{ ec2_masters.results }}"    
+
+#
+# Create Tools Node
+#    
+  - name: Create the EC2 Instance for the Tools Nodes
+    local_action:
+     module: ec2
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     region: "{{ region }}"
+     key_name: "{{ pemkey_name }}"
+     group_id: ["{{ hadoop_sg.group_id }}","{{ nn_sg.group_id }}"]
+     instance_type: "{{ hdptools_instancetype }}"
+     image: "{{ imageid }}"
+     vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
+     assign_public_ip: yes  
+     wait: yes
+     monitoring: yes
+     volumes:
+      - device_name: /dev/sda1
+        volume_size: "{{ root_ebs_size }}"
+        delete_on_termination: True
+     instance_tags:
+      Name: "{{ tag_prefix }}-{{ clustername }}-tools{{ item }}"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
+    register: ec2_tools
+    with_sequence: count=1
+   
+  - name: Add tools nodes to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=tools{{ item.0 + 1 }} --groups tools tools{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    with_indexed_items: "{{ ec2_tools.results }}"
+    
+  - name: Add tools nodes to hdp.hosts file
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\ttools{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
+    with_indexed_items: "{{ ec2_tools.results }}"    
 
 #
 # Create Data Nodes
@@ -334,6 +369,6 @@
     with_indexed_items: "{{ ec2_datas.results }}"
     
   - name: Add data nodes to hdp.hosts file
-    shell: echo -e "{{ item.1.instances[0].private_ip }}\tdata{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/hdp.hosts
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tdata{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     with_indexed_items: "{{ ec2_datas.results }}"    
 

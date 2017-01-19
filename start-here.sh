@@ -68,6 +68,7 @@ while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::h FLAG
     d) HDPDOMAINNAME="$OPTARG" ;;
     e) EDGEINSTANCETYPE="$OPTARG" ;;
     m) MASTERINSTANCETYPE="$OPTARG" ;;
+    t) TOOLSINSTANCETYPE="$OPTARG" ;;
     l) DATAINSTANCETYPE="$OPTARG" ;;
     z) DATAVOLUMESIZE="$OPTARG" ;;
     c) DATACOUNT="$OPTARG" ;;
@@ -94,6 +95,7 @@ Options:
   -d - Domain Name to use for the cluster components
   -e - EC2 instance type for EDGE node
   -m - EC2 instance type for MASTER node
+  -t - EC2 instance type for TOOLS node
   -l - EC2 instance type for DATA node(s)
   -z - EC2 volume size (GB) to attach to each DATA node
   -c - Number of EC2 DATA node(s)
@@ -175,6 +177,10 @@ MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCE
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
+TOOLSINSTANCETYPE=$(read_entry 'Enter TOOLS Instance Type' '' "$TOOLSINSTANCETYPE" 'm3.2xlarge')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
 DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
@@ -209,6 +215,7 @@ CONFTEXT="$CONFTEXT\nPEMKEYNAME=$PEMKEYNAME"
 CONFTEXT="$CONFTEXT\nPEMKEY=$PEMKEY"
 CONFTEXT="$CONFTEXT\nEDGE Instance Type=$EDGEINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nMASTER Instance Type=$MASTERINSTANCETYPE"
+CONFTEXT="$CONFTEXT\nTOOLS Instance Type=$TOOLSINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Instance Type=$DATAINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Volume Size=$DATAVOLUMESIZE"
 CONFTEXT="$CONFTEXT\nDATA Node Count=$DATACOUNT"
@@ -243,6 +250,7 @@ PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 EDGENODETYPE=$EDGEINSTANCETYPE \
 MASTERNODETYPE=$MASTERINSTANCETYPE \
+TOOLSNODETYPE=$TOOLSINSTANCETYPE \
 DATANODETYPE=$DATAINSTANCETYPE \
 NUMNODES=$DATACOUNT \
 EBSVOLSIZE=$DATAVOLUMESIZE \
@@ -277,6 +285,22 @@ ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/con
 set +x
 echo ''
 
+# show how to post-process the cluster
+echo "After cluster starts, post-process it::"
+echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
+HDPCLUSTERNAME=$HDPCLUSTERNAME \
+HDPDOMAINNAME=$HDPDOMAINNAME \
+AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
+PEMKEYNAME=$PEMKEYNAME \
+PEMKEY=$PEMKEY \
+NUMNODES=$DATACOUNT \
+BLUEPRINT=$BLUEPRINT \
+ANSIBLE_HOST_KEY_CHECKING=False \
+PATH="$PWD/scripts:$PATH" \
+TOPFOLDER="$PWD" \
+ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/postprocess-cluster
+echo ''
+
 # show how to destroy the cluster
 echo "To destroy the cluster, use the following:"
 echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
@@ -296,6 +320,7 @@ PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 EDGENODETYPE=$EDGEINSTANCETYPE \
 MASTERNODETYPE=$MASTERINSTANCETYPE \
+TOOLSNODETYPE=$TOOLSINSTANCETYPE \
 DATANODETYPE=$DATAINSTANCETYPE \
 NUMNODES=$DATACOUNT \
 EBSVOLSIZE=$DATAVOLUMESIZE \

@@ -1,0 +1,54 @@
+#
+# post processing
+#    
+- hosts: allnodes
+  name: Gather all facts
+  gather_facts: False
+  vars_files:
+  - "variables.yml"
+  tasks: [ ]
+
+- hosts: master2
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Fix Falcon
+    shell: sh -c "wget http://search.maven.org/remotecontent?filepath=com/sleepycat/je/5.0.73/je-5.0.73.jar -O /usr/hdp/current/falcon-server/server/webapp/falcon/WEB-INF/lib/je-5.0.73.jar; chown falcon:hadoop /usr/hdp/current/falcon-server/server/webapp/falcon/WEB-INF/lib/je-5.0.73.jar"
+
+- hosts: master1
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Fix Atlas
+    shell: sh -c "wget http://search.maven.org/remotecontent?filepath=com/sleepycat/je/5.0.73/je-5.0.73.jar -O /usr/hdp/current/atlas-server/server/webapp/atlas/WEB-INF/lib/je-5.0.73.jar ; chown atlas:hadoop /usr/hdp/current/atlas-server/server/webapp/atlas/WEB-INF/lib/je-5.0.73.jar"
+
+- hosts: edge
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Stop Affected Services
+    shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X PUT -d '{\"RequestInfo\"{{ ':' }} {\"context\" {{ ':' }}\"Stop Falcon via REST\"}, \"Body\"{{ ':' }} {\"ServiceInfo\"{{ ':' }} {\"state\"{{ ':' }} \"INSTALLED\"}}}' http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }}/services/FALCON"
+
+  - pause:
+    minutes: 2
+
+  - name: Start Affected Services
+    shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X PUT -d '{\"RequestInfo\"{{ ':' }} {\"context\" {{ ':' }}\"Stop Falcon via REST\"}, \"Body\"{{ ':' }} {\"ServiceInfo\"{{ ':' }} {\"state\"{{ ':' }} \"STARTED\"}}}' http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }}/services/FALCON"
+
+  - debug: msg="Ambari Server at http://{{ inventory_hostname }}:8080 is post-processed successfully"
+
