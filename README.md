@@ -69,22 +69,22 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
 1. *UI Node Access*.
    * The `l.login` user on the UI node *should* have its password set based on the `variables.yml` SHA-256 value. Be sure to login to the UI node and verify the password.
    * Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
-      ```
-      [centos@ip-172-20-242-22 ~]$ sudo su - l.login
-      [l.login@ip-172-20-242-22 ~]$ vncserver
+```
+[centos@ip-172-20-242-22 ~]$ sudo su - l.login
+[l.login@ip-172-20-242-22 ~]$ vncserver
 
-      You will require a password to access your desktops.
+You will require a password to access your desktops.
 
-      Password:
-      Verify:
-      xauth:  file /home/l.login/.Xauthority does not exist
+Password:
+Verify:
+xauth:  file /home/l.login/.Xauthority does not exist
 
-      New 'ip-172-20-242-22.us-west-2.compute.internal:1 (l.login)' desktop is ip-172-20-242-22.us-west-2.compute.internal:1
+New 'ip-172-20-242-22.us-west-2.compute.internal:1 (l.login)' desktop is ip-172-20-242-22.us-west-2.compute.internal:1
 
-      Creating default startup script /home/l.login/.vnc/xstartup
-      Starting applications specified in /home/l.login/.vnc/xstartup
-      Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
-      ```
+Creating default startup script /home/l.login/.vnc/xstartup
+Starting applications specified in /home/l.login/.vnc/xstartup
+Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
+```
 1. *Cluster Start*. Problems arise when I have the blueprint build / start the cluster.
    * Wait for the cluster to build (about 12 minutes)
    * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Leaving it enabled for the initial start sometimes blocks for a _long_ time
