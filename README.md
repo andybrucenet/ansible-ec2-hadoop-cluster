@@ -200,6 +200,9 @@ The point of this test cluster is to permit testing. Here is a sample script:
    * The nodes will add, but will do so in a blocking (modal) browser window. Have the candidate open another Firefox tab and login to the cluster. You should see the background operation running. Have the candidate explain what is going on for the different jobs. How would a blocked job be handled?
 <br />
 1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
+<br />
+1. *Configuration Changes*. As deployed, there are various optimizations / restarts that can make the cluster go faster.
+   * MapReduce2 - `Map Memory` and `AppMaster Memory` both can be bumped up to 2048MB. This in turn affects other parameters. Have the candidate explain why.
 
 ## Work with Candidate - Load Testing
 
