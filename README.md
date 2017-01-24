@@ -67,8 +67,8 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
 ## Post-Processing
 
 1. *UI Node Access*.
-..* The `l.login` user on the UI node *should* have its password set based on the `variables.yml` SHA-256 value. Be sure to login to the UI node and verify the password.
-..* Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
+   * The `l.login` user on the UI node *should* have its password set based on the `variables.yml` SHA-256 value. Be sure to login to the UI node and verify the password.
+   * Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
 ```
 [centos@ip-172-20-242-22 ~]$ sudo su - l.login
 [l.login@ip-172-20-242-22 ~]$ vncserver
@@ -87,21 +87,18 @@ Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
 ```
 
 1. *Cluster Start*. Problems arise when I have the blueprint build / start the cluster.
-** Wait for the cluster to build (about 12 minutes)
-** Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Leaving it enabled for the initial start sometimes blocks for a _long_ time
-** Select all hosts and start the cluster. Come back in 10 minutes and check.
-
+   * Wait for the cluster to build (about 12 minutes)
+   * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Leaving it enabled for the initial start sometimes blocks for a _long_ time
+   * Select all hosts and start the cluster. Come back in 10 minutes and check.
+<br />
 1. *Cluster Post-Process*.
-** After the cluster starts successfully, then execute the post-processing command emitted by the `start-here.sh` shell script above.
-** I have seen problems with my REST API calls to restart Atlas and Falcon services; to be sure everything is OK recommend restarting these services manually from Ambari UI.
-** Wait for the cluster to report completely clean (should be the case after Atlas / Falcon restarted).
-
+   * After the cluster starts successfully, then execute the post-processing command emitted by the `start-here.sh` shell script above.
+   * I have seen problems with my REST API calls to restart Atlas and Falcon services; to be sure everything is OK recommend restarting these services manually from Ambari UI.
+   * Wait for the cluster to report completely clean (should be the case after Atlas / Falcon restarted).
+<br />
 1. *Smoke Test*. Now that the cluster is up and no warnings / alerts display, verify operations.
-
-** Login to Tools node (SSH).
-
-** Run the following:
-
+   *Login to Tools node (SSH).
+   *Run the following:
 ```
 sudo su - hdfs
 hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar teragen 100000 ./test/10gsort/input
@@ -114,28 +111,26 @@ Runs cleanly? Then cluster is OK.
 The point of this test cluster is to permit testing. Here is a sample script:
 
 1. *VNC Login*. Have the candidate verify that they can access the UI node via VNC (which verifies basic computer skills).
-** Get the UI node EC2 public DNS name from the EC2 AWS Console and paste it to the candidate.
-** The candidate will VNC connect to `[EC2-PUBLIC]:5901`
-** VNC Password: This should be the one you specified when you ran the `vncserver` command above.
-** CentOS Login Password: After opening VNC, the candidate is prompted for the "Login User" (`l.login`) password; this was set during cluster creation.
-** Have candidate start Firefox and login to the Ambari cluster. This will always be:
+   * Get the UI node EC2 public DNS name from the EC2 AWS Console and paste it to the candidate.
+   * The candidate will VNC connect to `[EC2-PUBLIC]:5901`
+   * VNC Password: This should be the one you specified when you ran the `vncserver` command above.
+   * CentOS Login Password: After opening VNC, the candidate is prompted for the "Login User" (`l.login`) password; this was set during cluster creation.
+   * Have candidate start Firefox and login to the Ambari cluster. This will always be:
 ```
 http://edge.aws-test.local:8080
 ```
-
 1. *SSH Login*. You should have generated an SSH key during cluster creation.
-** Share the private key with the candidate.
-** The candidate should know that the full key (including comments) must be pasted to a local text file.
-** The candidate should know that permissions must be no more than `0600` on the local text file.
-** The candidate must be able to login to any of the running nodes as the `centos` user.
+   * Share the private key with the candidate.
+   * The candidate should know that the full key (including comments) must be pasted to a local text file.
+   * The candidate should know that permissions must be no more than `0600` on the local text file.
+   * The candidate must be able to login to any of the running nodes as the `centos` user.
 ```
 ssh -i [FULL_PATH_TO_LOCAL_KEY_FILE] centos@[AWS_EC2_DNS_NAME]
 ```
 If the candidate fails here...that's not a good sign.
-
 1. *Generate Initial Load*. We use the SWIM benchmark (https://github.com/SWIMProjectUCB/SWIM/wiki).
-** Interviewer logs into Tools node as `centos`
-** Invoke the SWIM wrapper (it should be in the home directory):
+   * Interviewer logs into Tools node as `centos`
+   * Invoke the SWIM wrapper (it should be in the home directory):
 ```
 ./swim-integration.sh [NUM_DATA_NODES] [NUM_64MB_PARTITIONS]
 ```
@@ -143,24 +138,22 @@ Use the number of data nodes you specified when building the cluster, and the nu
 ```
 ./swim-integration.sh 2 100
 ```
-** The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
-** You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
-
+   * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
+   * You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
-
 1. *Add another Data Node*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
-** Use the Add Host wizard.
-** "Install Options" dialog
-*** Target Hosts: `extra1.aws-test.local`
-*** Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
-** "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
-** "Assign Slaves and Clients". Use the same services as other Data Nodes:
-*** DataNode
-*** NodeManager
-*** RegionServer
-*** Supervisor
-*** Accumulo
-Do not
+   * Use the Add Host wizard.
+   * "Install Options" dialog
+     * Target Hosts: `extra1.aws-test.local`
+     * Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
+   * "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
+   * "Assign Slaves and Clients". Use the same services as other Data Nodes:
+     * DataNode
+     * NodeManager
+     * RegionServer
+     * Supervisor
+     * Accumulo
+     Do not install the Client tools
 
 *** Metrics Monitor
 
