@@ -155,18 +155,32 @@ The point of this test cluster is to permit testing. Here is a sample script:
         ./swim-integration.sh 2 100
         ```
 
-   * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
+   * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on:
+     * Yarn Memory consumption (goes critical during the data generation phase)
+     * Under-replicated blocks (goes critical under HDFS tab)
+     * Here is some sample output from the build phase. Have the candidate explain it:
+
+            ```
+            17/01/24 20:16:54 INFO mapreduce.Job:  map 75% reduce 0%
+            17/01/24 20:16:58 INFO mapreduce.Job:  map 77% reduce 0%
+            17/01/24 20:17:02 INFO mapreduce.Job:  map 78% reduce 0%
+            17/01/24 20:17:04 INFO mapreduce.Job:  map 79% reduce 0%
+            17/01/24 20:17:16 INFO mapreduce.Job:  map 80% reduce 0%
+            ```
+
    * You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
 
        ```
        # to show jobs:
        cd /usr/hdp/current/hadoop-client/scriptsTest
        l_jobs=$(ls WorkGenLogs | sed -e 's#job-\([0-9]\+\).*#\1#' | sort -nr | head -n 1)
-       echo " Job | Seconds" ;
+       echo " Job | Seconds" > /tmp/scriptsTest.log
        for i in $(seq 0 $l_jobs) ; do
          l_elapsed=$(cat ./WorkGenLogs/job-$i.txt | grep "The job took" | awk '{print $4}')
-         printf " %3d | %7d\n" $i $l_elapsed
+         printf " %3d | %7d\n" $i $l_elapsed >> /tmp/scriptsTest.log
        done
+       cat /tmp/scriptsTest.log
+       rm -f /tmp/scriptsTest.log
        ```
 <br />
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
