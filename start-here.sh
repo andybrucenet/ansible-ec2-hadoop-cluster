@@ -174,15 +174,15 @@ EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCETYPE" 'm3.2xlarge')
+MASTERINSTANCETYPE=$(read_entry 'Enter MASTER Instance Type' '' "$MASTERINSTANCETYPE" 'm4.4xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-TOOLSINSTANCETYPE=$(read_entry 'Enter TOOLS Instance Type' '' "$TOOLSINSTANCETYPE" 'm3.2xlarge')
+TOOLSINSTANCETYPE=$(read_entry 'Enter TOOLS Instance Type' '' "$TOOLSINSTANCETYPE" 'm4.4xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.xlarge')
+DATAINSTANCETYPE=$(read_entry 'Enter DATA Instance Type' '' "$DATAINSTANCETYPE" 'm3.2xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
