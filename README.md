@@ -4,9 +4,11 @@ Scripted deployment of a multi node HDP 2.4 (HDFS HA) in AWS (EC2) using
 Ansible Playbooks
 Ambari Blueprints
 
+## Initial Setup
+
 Sample command to build this environment:
 
-''''
+```
 # text values to feed to the process
 AWS_CREDENTIALS=~/.aws/credentials
 AWS_PEMKEY=~/.ssh/aws-devenv-key.pem
@@ -42,5 +44,49 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
   -x $AWS_PREFIX \
   -p $AWS_PEMKEYNAME \
   -k $AWS_PEMKEY
-''''
+```
+
+Follow the instructions printed out; there will be a cluster post-processing step you need to
+Workload:
+
+1. Logon to Tools node.
+
+2. Smoke test:
+
+```
+sudo su - hdfs
+mkdir -p ./test/10gsort
+hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar teragen 100000 ./test/10gsort/input
+```
+
+3. SWIM (https://github.com/SWIMProjectUCB/SWIM):
+
+```
+# one call does it all - as centos user
+TARGET_DATA_NODES=2
+TARGET_NUM_PARTITIONS=100
+./swim-integration.sh $TARGET_DATA_NODES $TARGET_NUM_PARTITIONS
+```
+
+To show all jobs from above:
+
+```
+# to show jobs:
+cd /usr/hdp/current/hadoop-client/scriptsTest
+l_jobs=$(ls WorkGenLogs | sed -e 's#job-\([0-9]\+\).*#\1#' | sort -nr | head -n 1)
+echo " Job | Seconds" ;
+for i in $(seq 0 $l_jobs) ; do
+  l_elapsed=$(cat ./WorkGenLogs/job-$i.txt | grep "The job took" | awk '{print $4}')
+  printf " %3d | %7d\n" $i $l_elapsed
+done
+```
+
+4. Benchmark Tests
+
+```
+# one call does it all - as centos user
+./hdp-test-integration.sh
+```
+
+
 

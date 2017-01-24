@@ -16,7 +16,7 @@
   - name: Wait for SSH to be available on Inventory Hosts
     local_action: wait_for host={{ inventory_hostname }} port=22
 
-    
+
 #
 # Common cluster configuration
 #    
@@ -28,14 +28,14 @@
   vars_files:
   - "variables.yml"
   gather_facts: False
-  
+
   tasks:
   - name: Copying PEM File to Instance
     copy: src="{{ pemkey }}" dest="/home/{{ ssh_login }}/{{ pemkey_name }}" owner="{{ ssh_login }}" mode=0400
-    
+
   - name: Adding SSH Identity
     lineinfile: dest=/etc/ssh/ssh_config insertafter=EOF line="Host *\n\tIdentityFile /home/{{ ssh_login }}/{{ pemkey_name }}"
-    
+
   - name: Copying hosts file to instance
     copy: src="~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts" dest=/etc/hosts  
 
@@ -56,19 +56,19 @@
     - systemctl mask firewalld
     - yum install -y iptables-services
     - systemctl disable iptables
-   
+
   - name: Initial iptables config
     command: "{{ item }}"
     ignore_errors: yes
     with_items:
     - systemctl start iptables
-    
+
   - name: Stop iptables
     service: name=iptables state=stopped
 
   - name: Stop iptables6
     service: name=ip6tables state=stopped
-    
+
   - name: Disabling SELinux
     lineinfile: dest=/etc/sysconfig/selinux regexp=^SELINUX= line=SELINUX=disabled
 
@@ -79,10 +79,10 @@
     yum:
       pkg: ntp
       state: installed
-  
+
   - name: Start NTP
     service: name=ntpd state=restarted
-    
+
   - name: Set networking yes
     lineinfile: dest=/etc/sysconfig/network create=yes state=present regexp='NETWORKING=.*' line='NETWORKING=yes'
 
@@ -90,17 +90,72 @@
     yum:
       pkg: wget
       state: installed
-  
+
   - name: Install epel
     yum:
       pkg: epel-release
       state: installed
-  
+
+#
+# UI server
+- hosts: ui
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Setup UI desktop
+    command: "{{ item }}"
+    ignore_errors: yes
+    with_items:
+    - yum -y groupinstall "X Window System"
+    - yum -y install gnome-classic-session gnome-terminal-nautilus control-center liberation-mono-fonts
+    - unlink /etc/systemd/system/default.target
+    - ln -sf /lib/systemd/system/graphical.target /etc/systemd/system/default.target
+    - yum -y install tigervnc-server firefox
+
+  - name: Create UI login user
+    user:
+      name: l.login
+      comment: "Login User"
+      shell: /bin/bash
+      password: "{{ ui_password }}"
+
+  - name: Restart UI server
+    shell: sleep 2 && shutdown -r now
+    async: 1
+    poll: 0
+    ignore_errors: true
+
+#
+# Wait for UI host to be available
+#    
+- hosts: ui
+  connection: local
+
+  tasks:
+  - name: Wait for UI server to restart
+    local_action: wait_for host={{ inventory_hostname }} port=22
+
+#
+# Ambari servers
+- hosts: master:data:tools:edge:extra
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
   - name: Install jq
     yum:
       pkg: jq
       state: installed
-  
+
   # Install Oracle JDK
   - name: Download Oracle JDK
     shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-linux-x64.rpm"
@@ -109,23 +164,23 @@
 
   - name: Install Oracle JDK
     shell: yum localinstall -y /opt/jdk-linux-x64.rpm
- 
+
   - name: Write out alternatives file
     template: src=../templates/java_alternatives.j2 dest=/tmp/java_alternatives.sh
- 
+
   - name: Setting alternatives
     shell: sh /tmp/java_alternatives.sh
-  
+
   - name: Remove previous links for jps
     shell: rm -f /usr/bin/jps  
-  
+
   - name: Set jps in path
     shell: ln -s `sudo find / -name jps | grep jdk` /usr/bin/jps  
 
   # Download/Install Ambari Repo and Agent    
   - name: Create Ambari Repo
     get_url: url={{ hdp_ambari_repo }} dest=/etc/yum.repos.d/ambari.repo
-    
+
   - name: Install Ambari agent
     yum:
       pkg: ambari-agent
@@ -144,7 +199,7 @@
   vars_files:
   - "variables.yml"
   gather_facts: False
-  
+
   tasks:
   - name: Install Ambari server
     yum:
@@ -176,7 +231,7 @@
   vars_files:
   - "variables.yml"
   gather_facts: False
-  
+
   tasks:
   - name: Configure Ambari server name on each agent
     ini_file:
@@ -206,8 +261,8 @@
     shell: sh -c "l_hosts=$(curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X GET -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/hosts | jq '.items | length') ; [[ l_hosts -eq {{ number_of_nodes }}+4 ]] && true"
     register: wait_ambari_agents
     until: wait_ambari_agents.rc == 0
-    retries: 20
-    delay: 6
+    retries: 100
+    delay: 5
 
   - name: Copying Ambari blueprint
     copy: src="{{ topfolder }}/blueprints/{{ blueprint }}.blueprint" dest="/home/{{ ssh_login }}/{{ blueprint }}.blueprint" owner="{{ ssh_login }}" mode=0400

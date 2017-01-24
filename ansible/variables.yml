@@ -10,6 +10,7 @@ hdpmaster_instancetype: "{{ lookup('env', 'MASTERNODETYPE') }}"
 hdptools_instancetype: "{{ lookup('env', 'TOOLSNODETYPE') }}"
 hdpdata_instancetype: "{{ lookup('env', 'DATANODETYPE') }}"
 number_of_nodes: "{{ lookup('env', 'NUMNODES') }}"
+number_of_extras: "{{ lookup('env', 'NUMEXTRAS') }}"
 root_ebs_size: "{{ lookup('env', 'EBSVOLSIZE') }}"
 vpc_id: "{{ lookup('env', 'AWS_VPC_ID') | default('vpc-69832d0e',true) }}"
 vpc_subnet:
@@ -31,4 +32,5 @@ hdp_ambari_repo: " http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updat
 java_alternatives: "{{ lookup('file', '../scripts/java_alternatives.sh') }}"
 topfolder: "{{ lookup('env', 'TOPFOLDER') }}"
 blueprint: "{{ lookup('env', 'BLUEPRINT') }}"
+ui_password: $6$rounds=656000$SwuqI3UDH.2yfDGm$pTRXkFs1QHYgCJ4DzZGXEbHGhW41RkrVqVeOFP36EPIecU6K7d8WcPZApJVkoUN1/3b8zltGLWkokzXKuan1c.
 

@@ -17,7 +17,7 @@
   vars_files:
   - "variables.yml"
   gather_facts: False
-  
+
   tasks:
 #
 # Create subnet
@@ -160,6 +160,32 @@
         cidr_ip: "{{ vpc_subnet.cidr }}"
     register: hadoop_sg
 
+  - name: UI Node - Security Group
+    local_action:
+     module: ec2_group
+     name: "{{ tag_prefix }}-{{ clustername }}-sg-ui"
+     description: UI Node Security Group
+     purge_rules: False
+     purge_rules_egress: False
+     vpc_id: "{{ vpc_id }}"
+     region: "{{ region }}"
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 5901
+        to_port: 5901
+        cidr_ip: 0.0.0.0/0        
+      - proto: all
+        group_name: "{{ tag_prefix }}-{{ clustername }}-sg-ui"
+      - proto: all
+        cidr_ip: "{{ vpc_subnet.cidr }}"
+    register: ui_sg
+
   - name: Hadoop Node - Tag Security Group
     ec2_tag:
      resource: "{{ hadoop_sg.group_id }}"
@@ -197,10 +223,50 @@
         from_port: 21000
         to_port: 21000
         cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 19888
+        to_port: 19888
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8088
+        to_port: 8088
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 3000
+        to_port: 3000
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 16010
+        to_port: 16010
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 11000
+        to_port: 11000
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8744
+        to_port: 8744
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 50095
+        to_port: 50095
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8886
+        to_port: 8886
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 18080
+        to_port: 18080
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 18081
+        to_port: 18081
+        cidr_ip: 0.0.0.0/0
       - proto: all
         cidr_ip: "{{ vpc_subnet.cidr }}"
     register: nn_sg    
-    
+
   - name: Master Node - Tag Security Group
     ec2_tag:
      resource: "{{ nn_sg.group_id }}"
@@ -234,7 +300,7 @@
 
   - name: Initialize hdp.hosts file
     shell: echo -e "127.0.0.1\tlocalhost" > ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts 
-      
+
 #
 # Create Edge Node        
 #
@@ -263,10 +329,10 @@
 
   - name: Add edge node to inventory
     shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ ec2_edgenode.instances[0].public_dns_name }} --hostname-internal=edge --groups edge allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
-    
+
   - name: Add edge node to hdp.hosts file
     shell: echo -e "{{ ec2_edgenode.instances[0].private_ip }}\tedge.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
-    
+
 #
 # Create Master Nodes
 #    
@@ -293,11 +359,11 @@
       Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_masters
     with_sequence: count=2
-   
+
   - name: Add master nodes to inventory
     shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=master{{ item.0 + 1 }} --groups master master{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_masters.results }}"
-    
+
   - name: Add master nodes to hdp.hosts file
     shell: echo -e "{{ item.1.instances[0].private_ip }}\tmaster{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     with_indexed_items: "{{ ec2_masters.results }}"    
@@ -328,11 +394,11 @@
       Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_tools
     with_sequence: count=1
-   
+
   - name: Add tools nodes to inventory
     shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=tools{{ item.0 + 1 }} --groups tools tools{{ item.0 + 1 }} allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_tools.results }}"
-    
+
   - name: Add tools nodes to hdp.hosts file
     shell: echo -e "{{ item.1.instances[0].private_ip }}\ttools{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     with_indexed_items: "{{ ec2_tools.results }}"    
@@ -363,12 +429,82 @@
       Cluster: "{{ tag_prefix }}-{{ clustername }}"
     register: ec2_datas
     with_sequence: count={{ number_of_nodes }}
-    
+
   - name: Add data nodes to inventory
     shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=data{{ item.0 + 1 }} --groups data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_datas.results }}"
-    
+
   - name: Add data nodes to hdp.hosts file
     shell: echo -e "{{ item.1.instances[0].private_ip }}\tdata{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
     with_indexed_items: "{{ ec2_datas.results }}"    
+
+#
+# Create "Extra" Data Nodes
+#       
+  - name: Create the EC2 Instances for the Extra Data Nodes
+    local_action:
+     module: ec2
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     region: "{{ region }}"
+     key_name: "{{ pemkey_name }}"
+     group_id: "{{ hadoop_sg.group_id }}"
+     instance_type: "{{ hdpdata_instancetype }}"
+     image: "{{ imageid }}"
+     vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
+     assign_public_ip: yes  
+     wait: yes
+     monitoring: yes
+     volumes:
+      - device_name: /dev/sda1
+        volume_size: "{{ root_ebs_size }}"
+        delete_on_termination: True
+     instance_tags:
+      Name: "{{ tag_prefix }}-{{ clustername }}-extra{{ item }}"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
+    register: ec2_extras
+    with_sequence: count={{ number_of_extras }}
+
+  - name: Add extra nodes to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=extra{{ item.0 + 1 }} --groups extra allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    with_indexed_items: "{{ ec2_extras.results }}"
+
+  - name: Add extra nodes to hdp.hosts file
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\textra{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
+    with_indexed_items: "{{ ec2_extras.results }}"    
+
+#
+# Create "UI" Data Nodes
+#       
+  - name: Create the EC2 Instances for the UI node
+    local_action:
+     module: ec2
+     aws_access_key: "{{ access_key }}"
+     aws_secret_key: "{{ secret_key }}"
+     region: "{{ region }}"
+     key_name: "{{ pemkey_name }}"
+     group_id: "{{ ui_sg.group_id }}"
+     instance_type: "m3.medium"
+     image: "{{ imageid }}"
+     vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
+     assign_public_ip: yes  
+     wait: yes
+     monitoring: yes
+     volumes:
+      - device_name: /dev/sda1
+        volume_size: "20"
+        delete_on_termination: True
+     instance_tags:
+      Name: "{{ tag_prefix }}-{{ clustername }}-ui{{ item }}"
+      Cluster: "{{ tag_prefix }}-{{ clustername }}"
+    register: ec2_uis
+    with_sequence: count=1
+
+  - name: Add UI nodes to inventory
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=ui{{ item.0 + 1 }} --groups ui allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    with_indexed_items: "{{ ec2_uis.results }}"
+
+  - name: Add UI nodes to hdp.hosts file
+    shell: echo -e "{{ item.1.instances[0].private_ip }}\tui{{ item.0 + 1 }}.{{ domainname }}" >> ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/hdp.hosts
+    with_indexed_items: "{{ ec2_uis.results }}"    
 

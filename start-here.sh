@@ -50,7 +50,7 @@ rm -rf "$g_local_inventory"
 # read command line options
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
-while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::h FLAG; do
+while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::y::h FLAG; do
   case "$FLAG" in
     a) AWS_ACCESS_KEY_ID="$OPTARG" ;;
     s) AWS_SECRET_ACCESS_KEY="$OPTARG" ;;
@@ -72,6 +72,7 @@ while getopts a::s::r::w::v::u::g::i::o::x::p::k::n::d::e::m::l::z::q::c::h FLAG
     l) DATAINSTANCETYPE="$OPTARG" ;;
     z) DATAVOLUMESIZE="$OPTARG" ;;
     c) DATACOUNT="$OPTARG" ;;
+    y) EXTRACOUNT="$OPTARG" ;;
     b) BLUEPRINT="$OPTARG" ;;
     h)
       cat << EOF
@@ -193,6 +194,10 @@ DATACOUNT=$(read_entry 'Enter DATA Node Count' '' "$DATACOUNT" '2')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
+EXTRACOUNT=$(read_entry 'Enter EXTRA DATA Node Count' '' "$EXTRACOUNT" '1')
+g_rc=$?
+[ $g_rc -ne 0 ] && exit $g_rc
+
 BLUEPRINT=$(read_entry 'Enter BLUEPRINT file name' '' "$BLUEPRINT" 'hdp-2-5-m1-m2-data')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
@@ -219,6 +224,7 @@ CONFTEXT="$CONFTEXT\nTOOLS Instance Type=$TOOLSINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Instance Type=$DATAINSTANCETYPE"
 CONFTEXT="$CONFTEXT\nDATA Volume Size=$DATAVOLUMESIZE"
 CONFTEXT="$CONFTEXT\nDATA Node Count=$DATACOUNT"
+CONFTEXT="$CONFTEXT\nEXTRA DATA Node Count=$EXTRACOUNT"
 CONFTEXT="$CONFTEXT\nBLUEPRINT=$BLUEPRINT"
 CONFTEXT="$CONFTEXT\n\nPress [OK] to continue or [Ctrl+C] to cancel"
 echo -n -e "$CONFTEXT"
@@ -253,6 +259,7 @@ MASTERNODETYPE=$MASTERINSTANCETYPE \
 TOOLSNODETYPE=$TOOLSINSTANCETYPE \
 DATANODETYPE=$DATAINSTANCETYPE \
 NUMNODES=$DATACOUNT \
+NUMEXTRAS=$EXTRACOUNT \
 EBSVOLSIZE=$DATAVOLUMESIZE \
 BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
@@ -277,6 +284,7 @@ AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
 PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 NUMNODES=$DATACOUNT \
+NUMEXTRAS=$EXTRACOUNT \
 BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
@@ -294,11 +302,12 @@ AWS_SSH_LOGIN=$AWS_SSH_LOGIN \
 PEMKEYNAME=$PEMKEYNAME \
 PEMKEY=$PEMKEY \
 NUMNODES=$DATACOUNT \
+NUMEXTRAS=$EXTRACOUNT \
 BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \
 PATH="$PWD/scripts:$PATH" \
 TOPFOLDER="$PWD" \
-ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/postprocess-cluster
+ansible-playbook -i "$g_local_inventory/$HDPCLUSTERNAME/all_nodes" ./ansible/postprocess-cluster.yml
 echo ''
 
 # show how to destroy the cluster
@@ -323,6 +332,7 @@ MASTERNODETYPE=$MASTERINSTANCETYPE \
 TOOLSNODETYPE=$TOOLSINSTANCETYPE \
 DATANODETYPE=$DATAINSTANCETYPE \
 NUMNODES=$DATACOUNT \
+NUMEXTRAS=$EXTRACOUNT \
 EBSVOLSIZE=$DATAVOLUMESIZE \
 BLUEPRINT=$BLUEPRINT \
 ANSIBLE_HOST_KEY_CHECKING=False \

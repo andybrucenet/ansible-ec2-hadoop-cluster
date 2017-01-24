@@ -37,7 +37,7 @@
   vars_files:
   - "variables.yml"
   gather_facts: False
-  
+
   tasks:
   - name: Remove Security Group dependencies
     ignore_errors: yes
@@ -54,6 +54,7 @@
      - sg-edge
      - sg-hadoop
      - sg-master
+     - sg-ui
 
   - name: Remove Security Groups
     ignore_errors: yes
@@ -70,6 +71,7 @@
      - sg-edge
      - sg-hadoop
      - sg-master
+     - sg-ui
 
   - name: Remove the VPC subnet
     local_action:
