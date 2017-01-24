@@ -69,22 +69,24 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
 1. *UI Node Access*.
    * The `l.login` user on the UI node *should* have its password set based on the `variables.yml` SHA-256 value. Be sure to login to the UI node and verify the password.
    * Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
-```
-[centos@ip-172-20-242-22 ~]$ sudo su - l.login
-[l.login@ip-172-20-242-22 ~]$ vncserver
 
-You will require a password to access your desktops.
+        ```
+        [centos@ip-172-20-242-22 ~]$ sudo su - l.login
+        [l.login@ip-172-20-242-22 ~]$ vncserver
 
-Password:
-Verify:
-xauth:  file /home/l.login/.Xauthority does not exist
+        You will require a password to access your desktops.
 
-New 'ip-172-20-242-22.us-west-2.compute.internal:1 (l.login)' desktop is ip-172-20-242-22.us-west-2.compute.internal:1
+        Password:
+        Verify:
+        xauth:  file /home/l.login/.Xauthority does not exist
 
-Creating default startup script /home/l.login/.vnc/xstartup
-Starting applications specified in /home/l.login/.vnc/xstartup
-Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
-```
+        New 'ip-172-20-242-22.us-west-2.compute.internal:1 (l.login)' desktop is ip-172-20-242-22.us-west-2.compute.internal:1
+
+        Creating default startup script /home/l.login/.vnc/xstartup
+        Starting applications specified in /home/l.login/.vnc/xstartup
+        Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
+        ```
+
 1. *Cluster Start*. Problems arise when I have the blueprint build / start the cluster.
    * Wait for the cluster to build (about 12 minutes)
    * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Leaving it enabled for the initial start sometimes blocks for a _long_ time
@@ -98,12 +100,14 @@ Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
 1. *Smoke Test*. Now that the cluster is up and no warnings / alerts display, verify operations.
    * Login to Tools node (SSH).
    * Run the following:
-```
-sudo su - hdfs
-hadoop jar \
-  /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar \
-  teragen 100000 ./test/10gsort/input
-```
+
+        ```
+        sudo su - hdfs
+        hadoop jar \
+          /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar \
+          teragen 100000 ./test/10gsort/input
+        ```
+
 Runs cleanly? Then cluster is OK.
 
 ## Work with Candidate - Basic
@@ -116,28 +120,48 @@ The point of this test cluster is to permit testing. Here is a sample script:
    * VNC Password: This should be the one you specified when you ran the `vncserver` command above.
    * CentOS Login Password: After opening VNC, the candidate is prompted for the "Login User" (`l.login`) password; this was set during cluster creation.
    * Have candidate start Firefox and login to the Ambari cluster. This will always be:
-```
-http://edge.aws-test.local:8080
-```
+
+        ```
+        http://edge.aws-test.local:8080
+        ```
+
 1. *SSH Login*. You should have generated an SSH key during cluster creation.
    * Share the private key with the candidate.
    * The candidate should know that the full key (including comments) must be pasted to a local text file.
    * The candidate should know that permissions must be no more than `0600` on the local text file.
    * The candidate must be able to login to any of the running nodes as the `centos` user.
-```
-ssh -i [FULL_PATH_TO_LOCAL_KEY_FILE] centos@[AWS_EC2_DNS_NAME]
-```
+
+        ```
+        ssh -i [FULL_PATH_TO_LOCAL_KEY_FILE] centos@[AWS_EC2_DNS_NAME]
+        ```
+
      If the candidate fails here...that's not a good sign.
 1. *Generate Initial Load*. We use the SWIM benchmark (https://github.com/SWIMProjectUCB/SWIM/wiki).
    * Interviewer logs into Tools node as `centos`
    * Invoke the SWIM wrapper (it should be in the home directory):
-```
-./swim-integration.sh [NUM_DATA_NODES] [NUM_64MB_PARTITIONS]
-```
-     Use the number of data nodes you specified when building the cluster, and the number of 64MB partitions you want. Here's a typical usage:
-```
-./swim-integration.sh 2 100
-```
+
+        ```
+        ./swim-integration.sh [NUM_DATA_NODES] [NUM_64MB_PARTITIONS]
+        ```
+
+        Use the number of data nodes you specified when building the cluster, and the number of 64MB partitions you want. Here's a typical usage:
+
+        ```
+        ./swim-integration.sh 2 100
+        ```
+    * To show the jobs:
+
+       ```
+       # to show jobs:
+       cd /usr/hdp/current/hadoop-client/scriptsTest
+       l_jobs=$(ls WorkGenLogs | sed -e 's#job-\([0-9]\+\).*#\1#' | sort -nr | head -n 1)
+       echo " Job | Seconds" ;
+       for i in $(seq 0 $l_jobs) ; do
+         l_elapsed=$(cat ./WorkGenLogs/job-$i.txt | grep "The job took" | awk '{print $4}')
+         printf " %3d | %7d\n" $i $l_elapsed
+       done
+       ```
+
    * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
    * You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
@@ -178,29 +202,4 @@ Here's how to run the test:
 1. Run the `./pigmix-integration.sh` script. No parameters needed.
 1. The script does a full build of pigmix which was quite a pain.
 1. Even with the multiple 'extra' data nodes the process is slow.
-
-./swim-integration.sh $TARGET_DATA_NODES $TARGET_NUM_PARTITIONS
-```
-
-To show all jobs from above:
-
-```
-# to show jobs:
-cd /usr/hdp/current/hadoop-client/scriptsTest
-l_jobs=$(ls WorkGenLogs | sed -e 's#job-\([0-9]\+\).*#\1#' | sort -nr | head -n 1)
-echo " Job | Seconds" ;
-for i in $(seq 0 $l_jobs) ; do
-  l_elapsed=$(cat ./WorkGenLogs/job-$i.txt | grep "The job took" | awk '{print $4}')
-  printf " %3d | %7d\n" $i $l_elapsed
-done
-```
-
-4. Benchmark Tests
-
-```
-# one call does it all - as centos user
-./hdp-test-integration.sh
-```
-
-
 
