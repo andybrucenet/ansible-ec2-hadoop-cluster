@@ -64,10 +64,11 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
   -k $AWS_PEMKEY
 ```
 
+Normal processing is to specify 2 data nodes initially, and 4 "extra" data nodes. Otherwise, the performance tests below can take a long time and your cluster keeps reporting under-replicated blocks.
+
 ## Post-Processing
 
 1. *UI Node Access*.
-   * The `l.login` user on the UI node *should* have its password set based on the `variables.yml` SHA-256 value. Be sure to login to the UI node and verify the password.
    * Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
 
         ```
@@ -87,10 +88,13 @@ AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Value
         Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
         ```
 
-1. *Cluster Start*. Problems arise when I have the blueprint build / start the cluster.
-   * Wait for the cluster to build (about 12 minutes)
-   * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Leaving it enabled for the initial start sometimes blocks for a _long_ time
+   * While you are at it...login to the UI node via VNC. You can open Firefox and check out the status of the cluster install.
+<br />
+1. *Cluster Start*. Problems arise when I have the blueprint build and start the cluster. So, I have you do the actual cluster start manually.
+   * Wait for the cluster to build (normally less than 15 minutes)
+   * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Otherwise, the initial cluster start sometimes blocks for a _long_ time.
    * Select all hosts and start the cluster. Come back in 10 minutes and check.
+   * Under the `master1` node, enable the `Accumulo Tracer` and start it. Should take only a minute or so.
 <br />
 1. *Cluster Post-Process*.
    * After the cluster starts successfully, then execute the post-processing command emitted by the `start-here.sh` shell script above.
@@ -136,6 +140,7 @@ The point of this test cluster is to permit testing. Here is a sample script:
         ```
 
      If the candidate fails here...that's not a good sign.
+<br />
 1. *Generate Initial Load*. We use the SWIM benchmark (https://github.com/SWIMProjectUCB/SWIM/wiki).
    * Interviewer logs into Tools node as `centos`
    * Invoke the SWIM wrapper (it should be in the home directory):
@@ -149,7 +154,9 @@ The point of this test cluster is to permit testing. Here is a sample script:
         ```
         ./swim-integration.sh 2 100
         ```
-    * To show the jobs:
+
+   * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
+   * You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
 
        ```
        # to show jobs:
@@ -161,10 +168,9 @@ The point of this test cluster is to permit testing. Here is a sample script:
          printf " %3d | %7d\n" $i $l_elapsed
        done
        ```
-
-   * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on things like the Yarn Memory consumption (goes critical during the data generation phase) and under-replicated blocks (goes critical under HDFS tab).
-   * You will know when the SWIM tests complete because 50 jobs will finish. Also, you will see no `RUNNING | ACCEPTED` jobs under the Yarn Resource Manager UI. Have the candidate find these values for you and tell you when the jobs are all finished.
+<br />
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
+<br />
 1. *Add another Data Node*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
    * Use the Add Host wizard.
    * "Install Options" dialog
@@ -177,6 +183,7 @@ The point of this test cluster is to permit testing. Here is a sample script:
      * RegionServer
      * Supervisor
      * Accumulo
+<br />
 1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
 
 ## Work with Candidate - Load Testing
@@ -187,9 +194,13 @@ Now that the cluster should be humming along with 3 data nodes, we can run some 
    * Logon to the Tools node as `centos`
    * The script `./hdp-test-integration.sh` should exist. Run it without parameters.
    * As tests complete, you will have output available. Paste in portions of the output to have the candidate comment on what is going on.
+<br />
 1. *DFS IO* - This test writes 10GB of data to the HDFS file system. It will generate Yarn Memory warnings. The write portion of the test took quite a while to run, perhaps because of the under-replicated blocks were also auto-correcting.
+<br />
 1. *Terasort* - This test performs the standard Terasort benchmark with 3GB of data.
+<br />
 1. *NNBench* - Runs with 1000 files
+<br />
 1. *MRBench* - Runs with 50 jobs.
 
 ## Work with Candidate - PigMix
@@ -199,7 +210,10 @@ The PigMix project (https://cwiki.apache.org/confluence/display/PIG/PigMix) is a
 Here's how to run the test:
 
 1. Logon to Tools node (centos user).
+<br />
 1. Run the `./pigmix-integration.sh` script. No parameters needed.
+<br />
 1. The script does a full build of pigmix which was quite a pain.
+<br />
 1. Even with the multiple 'extra' data nodes the process is slow.
 
