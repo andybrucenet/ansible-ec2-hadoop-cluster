@@ -5,7 +5,7 @@
   - "variables.yml"
   tasks: [ ]
 
-- hosts: master:data:tools
+- hosts: master:data:tools:edge:extra
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -14,15 +14,41 @@
   gather_facts: False
 
   tasks:
-  - name: Configure Ambari server name on each agent
-    ini_file:
-     dest: /etc/ambari-agent/conf/ambari-agent.ini
-     section: server
-     option: hostname
-     value: "edge.{{ domainname }}"
+  - name: Install jq
+    yum:
+      pkg: jq
+      state: installed
 
-  - name: Restart Ambari agent
+  # Install Oracle JDK
+  - name: Download Oracle JDK
+    shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-linux-x64.rpm"
+    args:
+      creates: /opt/jdk-linux-x64.rpm
+
+  - name: Install Oracle JDK
+    shell: yum localinstall -y /opt/jdk-linux-x64.rpm
+
+  - name: Write out alternatives file
+    template: src=../templates/java_alternatives.j2 dest=/tmp/java_alternatives.sh
+
+  - name: Setting alternatives
+    shell: sh /tmp/java_alternatives.sh
+
+  - name: Remove previous links for jps
+    shell: rm -f /usr/bin/jps  
+
+  - name: Set jps in path
+    shell: ln -s `sudo find / -name jps | grep jdk` /usr/bin/jps  
+
+  # Download/Install Ambari Repo and Agent    
+  - name: Create Ambari Repo
+    get_url: url={{ hdp_ambari_repo }} dest=/etc/yum.repos.d/ambari.repo
+
+  - name: Install Ambari agent
+    yum:
+      pkg: ambari-agent
+      state: installed
+
+  - name: Start Ambari agent
     service: name=ambari-agent state=restarted
-
-  - debug: msg="Ambari Agents reconfigured"
 

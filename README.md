@@ -233,7 +233,7 @@ While the above is running - you should see the Under Replicated Blocks count go
 
 ## Work with Candidate - PigMix
 
-The PigMix project (https://cwiki.apache.org/confluence/display/PIG/PigMix) is a set of queries used test pig performance from release to release.
+The PigMix project (https://cwiki.apache.org/confluence/display/PIG/PigMix) is a set of queries used to test pig performance from release to release.
 
 Here's how to run the test:
 
