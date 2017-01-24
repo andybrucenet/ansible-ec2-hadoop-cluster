@@ -102,7 +102,7 @@ Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
 sudo su - hdfs
 hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar teragen 100000 ./test/10gsort/input
 ```
-     Runs cleanly? Then cluster is OK.
+Runs cleanly? Then cluster is OK.
 
 ## Work with Candidate
 
