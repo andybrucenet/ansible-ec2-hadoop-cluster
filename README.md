@@ -185,10 +185,10 @@ The point of this test cluster is to permit testing. Here is a sample script:
 <br />
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
 <br />
-1. *Add another Data Node*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
+1. *Add more Data Nodes*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
    * Use the Add Host wizard.
    * "Install Options" dialog
-     * Target Hosts: `extra1.aws-test.local`
+     * Target Hosts: `extra1.aws-test.local` (that is the first data node). You can also add additional "extra" data nodes if they were created.
      * Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
    * "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
    * "Assign Slaves and Clients". Use the same services as other Data Nodes (do not install the Client tools):
@@ -197,18 +197,30 @@ The point of this test cluster is to permit testing. Here is a sample script:
      * RegionServer
      * Supervisor
      * Accumulo
+   * The nodes will add, but will do so in a blocking (modal) browser window. Have the candidate open another Firefox tab and login to the cluster. You should see the background operation running. Have the candidate explain what is going on for the different jobs. How would a blocked job be handled?
 <br />
 1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
 
 ## Work with Candidate - Load Testing
 
-Now that the cluster should be humming along with 3 data nodes, we can run some more load onto it.
+Now that the cluster should be humming along with multiple data nodes, we can run some more load onto it.
 
 1. General Notes:
    * Logon to the Tools node as `centos`
    * The script `./hdp-test-integration.sh` should exist. Run it without parameters.
-   * As tests complete, you will have output available. Paste in portions of the output to have the candidate comment on what is going on.
-<br />
+   * As tests complete, you will have output available. Paste in portions of the output to have the candidate comment on what is going on. Here is an example:
+
+        ```
+        17/01/24 20:41:42 INFO fs.TestDFSIO: ----- TestDFSIO ----- : read
+        17/01/24 20:41:42 INFO fs.TestDFSIO:            Date & time: Tue Jan 24 20:41:42 UTC 2017
+        17/01/24 20:41:42 INFO fs.TestDFSIO:        Number of files: 10
+        17/01/24 20:41:42 INFO fs.TestDFSIO: Total MBytes processed: 10000.0
+        17/01/24 20:41:42 INFO fs.TestDFSIO:      Throughput mb/sec: 75.01256460457127
+        17/01/24 20:41:42 INFO fs.TestDFSIO: Average IO rate mb/sec: 89.54175567626953
+        17/01/24 20:41:42 INFO fs.TestDFSIO:  IO rate std deviation: 33.578914837457944
+        17/01/24 20:41:42 INFO fs.TestDFSIO:     Test exec time sec: 52.858
+        ```
+
 1. *DFS IO* - This test writes 10GB of data to the HDFS file system. It will generate Yarn Memory warnings. The write portion of the test took quite a while to run, perhaps because of the under-replicated blocks were also auto-correcting.
 <br />
 1. *Terasort* - This test performs the standard Terasort benchmark with 3GB of data.
@@ -216,6 +228,8 @@ Now that the cluster should be humming along with 3 data nodes, we can run some 
 1. *NNBench* - Runs with 1000 files
 <br />
 1. *MRBench* - Runs with 50 jobs.
+
+While the above is running - you should see the Under Replicated Blocks count go down. However, they may never quite reach zero. (In the test run I'm documenting as I write this, the block count is stuck at 2.) Have the candidate explain why this is so - how many data nodes must be added for the count to go down to zero?
 
 ## Work with Candidate - PigMix
 
