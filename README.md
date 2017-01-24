@@ -1,8 +1,8 @@
 # ansible-ec2-hadoop-cluster
 
 Scripted deployment of a multi node HDP 2.5 (HDFS HA) in AWS (EC2) using
-Ansible Playbooks
-Ambari Blueprints
+* Ansible Playbooks
+* Ambari Blueprints
 
 Suitable for testing potential Hadoop Sysadmin candidates in a real-world environment.
 
@@ -100,11 +100,13 @@ Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
    * Run the following:
 ```
 sudo su - hdfs
-hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar teragen 100000 ./test/10gsort/input
+hadoop jar \
+  /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar \
+  teragen 100000 ./test/10gsort/input
 ```
 Runs cleanly? Then cluster is OK.
 
-## Work with Candidate
+## Work with Candidate - Basic
 
 The point of this test cluster is to permit testing. Here is a sample script:
 
@@ -145,33 +147,38 @@ ssh -i [FULL_PATH_TO_LOCAL_KEY_FILE] centos@[AWS_EC2_DNS_NAME]
      * Target Hosts: `extra1.aws-test.local`
      * Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
    * "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
-   * "Assign Slaves and Clients". Use the same services as other Data Nodes:
+   * "Assign Slaves and Clients". Use the same services as other Data Nodes (do not install the Client tools):
      * DataNode
      * NodeManager
      * RegionServer
      * Supervisor
      * Accumulo
-     Do not install the Client tools
+1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
 
-### Metrics Monitor
+## Work with Candidate - Load Testing
 
+Now that the cluster should be humming along with 3 data nodes, we can run some more load onto it.
 
-** Run Generate some load by:
+1. General Notes:
+   * Logon to the Tools node as `centos`
+   * The script `./hdp-test-integration.sh` should exist. Run it without parameters.
+   * As tests complete, you will have output available. Paste in portions of the output to have the candidate comment on what is going on.
+1. *DFS IO* - This test writes 10GB of data to the HDFS file system. It will generate Yarn Memory warnings. The write portion of the test took quite a while to run, perhaps because of the under-replicated blocks were also auto-correcting.
+1. *Terasort* - This test performs the standard Terasort benchmark with 3GB of data.
+1. *NNBench* - Runs with 1000 files
+1. *MRBench* - Runs with 50 jobs.
 
-After the instructions printed out; there will be a cluster post-processing step you need to perform.
-Workload:
+## Work with Candidate - PigMix
 
-1. Logon to Tools node.
+The PigMix project (https://cwiki.apache.org/confluence/display/PIG/PigMix) is a set of queries used test pig performance from release to release.
 
-2. Smoke test:
+Here's how to run the test:
 
+1. Logon to Tools node (centos user).
+1. Run the `./pigmix-integration.sh` script. No parameters needed.
+1. The script does a full build of pigmix which was quite a pain.
+1. Even with the multiple 'extra' data nodes the process is slow.
 
-3. SWIM (https://github.com/SWIMProjectUCB/SWIM):
-
-```
-# one call does it all - as centos user
-TARGET_DATA_NODES=2
-TARGET_NUM_PARTITIONS=100
 ./swim-integration.sh $TARGET_DATA_NODES $TARGET_NUM_PARTITIONS
 ```
 

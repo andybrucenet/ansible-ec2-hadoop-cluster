@@ -484,7 +484,7 @@
      region: "{{ region }}"
      key_name: "{{ pemkey_name }}"
      group_id: "{{ ui_sg.group_id }}"
-     instance_type: "m3.medium"
+     instance_type: "m3.large"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
      assign_public_ip: yes  

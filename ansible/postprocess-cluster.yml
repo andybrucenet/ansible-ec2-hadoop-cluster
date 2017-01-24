@@ -23,6 +23,9 @@
   - name: Copying script - hdp-test-integration.sh
     copy: src="{{ topfolder }}/scripts/hdp-test-integration.sh" dest="/home/{{ ssh_login }}/hdp-test-integration.sh" owner="{{ ssh_login }}" mode=0550
 
+  - name: Copying script - pigmix-integration.sh
+    copy: src="{{ topfolder }}/scripts/pigmix-integration.sh" dest="/home/{{ ssh_login }}/pigmix-integration.sh" owner="{{ ssh_login }}" mode=0550
+
 - hosts: master2
   user: "{{ ssh_login }}"
   become: true
