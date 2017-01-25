@@ -174,7 +174,6 @@ The point of this test cluster is to permit testing. Here is a sample script:
      * NodeManager
      * RegionServer
      * Supervisor
-     * Accumulo
    * The nodes will add, but will do so in a blocking (modal) browser window. Have the candidate open another Firefox tab and login to the cluster. You should see the background operation running. Have the candidate explain what is going on for the different jobs. How would a blocked job be handled?
 <br />
 1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
