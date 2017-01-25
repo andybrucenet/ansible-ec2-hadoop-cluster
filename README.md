@@ -161,7 +161,6 @@ The point of this test cluster is to permit testing. Here is a sample script:
 
 ## Work with Candidate - Block Replication and Add Nodes
 
-<br />
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
 <br />
 1. *Add more Data Nodes*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
