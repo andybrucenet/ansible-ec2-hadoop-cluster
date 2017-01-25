@@ -108,6 +108,7 @@ Normal processing is to specify 2 data nodes initially, and 4 "extra" data nodes
         hadoop jar \
           /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar \
           teragen 100000 ./test/10gsort/input
+        exit
         ```
 
 Runs cleanly? Then cluster is OK.
@@ -147,6 +148,18 @@ The point of this test cluster is to permit testing. Here is a sample script:
         ```
         sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin; hdfs dfs -chown admin /user/admin'
         ```
+
+## Work with Candidate - Tables and Backup
+
+1. Use case: Convert sample CSV to any kind of table?
+   * We did this through Hive
+   * Can be any kind of table.
+1. Ambari uses three databases (UMiami merged all into MySQL).
+   * Identify each database in use - Ambari (PostgreSQL?), Hive (MySQL), Oozie (Built-in), HBase (Built-in). Have a
+   * What is the backup strategy to use?
+   * How to test a restore?
+
+## Work with Candidate - Block Replication and Add Nodes
 
 <br />
 1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
@@ -212,16 +225,6 @@ The point of this test cluster is to permit testing. Here is a sample script:
 <br />
 1. *Configuration Changes*. As deployed, there are various optimizations / restarts that can make the cluster go faster.
    * MapReduce2 - `Map Memory` and `AppMaster Memory` both can be bumped up to 2048MB. This in turn affects other parameters. Have the candidate explain why.
-
-## Work with Candidate - Tables and Backup
-
-1. Use case: Convert sample CSV to any kind of table?
-   * We did this through Hive
-   * Can be any kind of table.
-1. Ambari uses three databases (UMiami merged all into MySQL).
-   * Identify each database in use - Ambari (PostgreSQL?), Hive (MySQL), Oozie (Built-in), HBase (Built-in). Have a
-	 * What is the backup strategy to use?
-	 * How to test a restore?
 
 ## Work with Candidate - Load Testing
 
