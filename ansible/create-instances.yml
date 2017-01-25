@@ -347,7 +347,7 @@
      instance_type: "{{ hdpmaster_instancetype }}"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
-     assign_public_ip: yes  
+     assign_public_ip: yes
      wait: yes
      monitoring: yes
      volumes:
@@ -382,7 +382,7 @@
      instance_type: "{{ hdptools_instancetype }}"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
-     assign_public_ip: yes  
+     assign_public_ip: yes
      wait: yes
      monitoring: yes
      volumes:
@@ -417,7 +417,7 @@
      instance_type: "{{ hdpdata_instancetype }}"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
-     assign_public_ip: yes  
+     assign_public_ip: yes
      wait: yes
      monitoring: yes
      volumes:
@@ -431,7 +431,7 @@
     with_sequence: count={{ number_of_nodes }}
 
   - name: Add data nodes to inventory
-    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=data{{ item.0 + 1 }} --groups data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
+    shell: add-host.sh --path ~/.ansible/local_inventory/ansible-ec2-hadoop-cluster/{{ clustername }}/all_nodes --hostname-public={{ item.1.instances[0].public_dns_name }} --hostname-internal=data{{ item.0 + 1 }} --groups data{{ item.0 + 1 }} data allnodes --opt-arg-keys ansible_ssh_private_key_file ansible_ssh_user --opt-arg-values {{ pemkey }} {{ ssh_login }}
     with_indexed_items: "{{ ec2_datas.results }}"
 
   - name: Add data nodes to hdp.hosts file
@@ -452,7 +452,7 @@
      instance_type: "{{ hdpdata_instancetype }}"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
-     assign_public_ip: yes  
+     assign_public_ip: yes
      wait: yes
      monitoring: yes
      volumes:
@@ -474,7 +474,7 @@
     with_indexed_items: "{{ ec2_extras.results }}"    
 
 #
-# Create "UI" Data Nodes
+# Create "UI" Nodes
 #       
   - name: Create the EC2 Instances for the UI node
     local_action:
@@ -484,7 +484,7 @@
      region: "{{ region }}"
      key_name: "{{ pemkey_name }}"
      group_id: "{{ ui_sg.group_id }}"
-     instance_type: "m3.large"
+     instance_type: "m3.xlarge"
      image: "{{ imageid }}"
      vpc_subnet_id: "{{ the_vpc_subnet.subnet.id }}"
      assign_public_ip: yes  

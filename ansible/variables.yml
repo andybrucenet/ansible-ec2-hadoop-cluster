@@ -28,7 +28,8 @@ ssh_login: "{{ lookup('env', 'AWS_SSH_LOGIN') | default('centos',true) }}"
 tag_prefix: "{{ lookup('env', 'AWS_PREFIX') }}"
 oracle_jdk_download: "http://download.oracle.com/otn-pub/java/jdk/8u111-b14/jdk-8u111-linux-x64.rpm"
 oracle_jdk_version: jdk1.8.0_111
-hdp_ambari_repo: " http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.4.2.0/ambari.repo"
+stress_download: ftp://fr2.rpmfind.net/linux/dag/redhat/el7/en/x86_64/dag/RPMS/stress-1.0.2-1.el7.rf.x86_64.rpm
+hdp_ambari_repo: "http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.4.2.0/ambari.repo"
 java_alternatives: "{{ lookup('file', '../scripts/java_alternatives.sh') }}"
 topfolder: "{{ lookup('env', 'TOPFOLDER') }}"
 blueprint: "{{ lookup('env', 'BLUEPRINT') }}"

@@ -6,7 +6,11 @@
   gather_facts: False
   vars_files:
   - "variables.yml"
-  tasks: [ ]
+  tasks:
+  - name: Common scripts
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
+    with_items:
+    - stresser.sh
 
 - hosts: tools
   user: "{{ ssh_login }}"
@@ -17,14 +21,14 @@
   gather_facts: False
 
   tasks:
-  - name: Copying script - swim-integration.sh
-    copy: src="{{ topfolder }}/scripts/swim-integration.sh" dest="/home/{{ ssh_login }}/swim-integration.sh" owner="{{ ssh_login }}" mode=0550
-
-  - name: Copying script - hdp-test-integration.sh
-    copy: src="{{ topfolder }}/scripts/hdp-test-integration.sh" dest="/home/{{ ssh_login }}/hdp-test-integration.sh" owner="{{ ssh_login }}" mode=0550
-
-  - name: Copying script - pigmix-integration.sh
-    copy: src="{{ topfolder }}/scripts/pigmix-integration.sh" dest="/home/{{ ssh_login }}/pigmix-integration.sh" owner="{{ ssh_login }}" mode=0550
+  - name: Copying scripts
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
+    with_items:
+    - hdp-test-integration.sh
+    - pigmix-integration.sh
+    - swim-integration.sh
+    - mapper.R
+    - reducer.R
 
 - hosts: master2
   user: "{{ ssh_login }}"
@@ -62,8 +66,8 @@
   - name: Stop Affected Services
     shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X PUT -d '{\"RequestInfo\"{{ ':' }} {\"context\" {{ ':' }}\"Stop Falcon via REST\"}, \"Body\"{{ ':' }} {\"ServiceInfo\"{{ ':' }} {\"state\"{{ ':' }} \"INSTALLED\"}}}' http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }}/services/FALCON"
 
-  - name: Wait 2 minutes...
-    shell: sh -c "sleep 120"
+  - name: Wait 15 seconds...
+    shell: sh -c "sleep 15"
 
   - name: Start Affected Services
     shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X PUT -d '{\"RequestInfo\"{{ ':' }} {\"context\" {{ ':' }}\"Stop Falcon via REST\"}, \"Body\"{{ ':' }} {\"ServiceInfo\"{{ ':' }} {\"state\"{{ ':' }} \"STARTED\"}}}' http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }}/services/FALCON"

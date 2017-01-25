@@ -209,8 +209,8 @@
           "ipc.client.connection.maxidletime" : "30000",
           "hadoop.proxyuser.hcat.groups" : "*",
           "hadoop.proxyuser.livy.groups" : "*",
-          "hadoop.proxyuser.hive.hosts" : "%HOSTGROUP::master_1%",
-          "hadoop.proxyuser.root.hosts" : "edge.aws-test.local",
+          "hadoop.proxyuser.hive.hosts" : "*",
+          "hadoop.proxyuser.root.hosts" : "*",
           "ha.failover-controller.active-standby-elector.zk.op.retries" : "120",
           "hadoop.security.authentication" : "simple",
           "hadoop.proxyuser.hdfs.hosts" : "*",
@@ -218,8 +218,8 @@
           "io.file.buffer.size" : "131072",
           "hadoop.proxyuser.livy.hosts" : "*",
           "hadoop.proxyuser.falcon.hosts" : "*",
-          "hadoop.proxyuser.oozie.hosts" : "%HOSTGROUP::tools_nodes%",
-          "hadoop.proxyuser.hcat.hosts" : "%HOSTGROUP::master_1%",
+          "hadoop.proxyuser.oozie.hosts" : "*",
+          "hadoop.proxyuser.hcat.hosts" : "*",
           "hadoop.proxyuser.oozie.groups" : "*",
           "net.topology.script.file.name" : "/etc/hadoop/conf/topology_script.py",
           "io.compression.codecs" : "org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.SnappyCodec",
@@ -1682,7 +1682,7 @@
           "yarn.resourcemanager.system-metrics-publisher.enabled" : "true",
           "yarn.timeline-service.client.max-retries" : "30",
           "yarn.timeline-service.client.retry-interval-ms" : "1000",
-          "yarn.timeline-service.http-authentication.proxyuser.root.hosts" : "edge.aws-test.local",
+          "yarn.timeline-service.http-authentication.proxyuser.root.hosts" : "*",
           "yarn.timeline-service.store-class" : "org.apache.hadoop.yarn.server.timeline.EntityGroupFSTimelineStore",
           "yarn.timeline-service.bind-host" : "0.0.0.0",
           "yarn.nodemanager.container-metrics.unregister-delay-ms" : "60000",
@@ -2725,9 +2725,6 @@
           "name" : "HDFS_CLIENT"
         },
         {
-          "name" : "ACCUMULO_TRACER"
-        },
-        {
           "name" : "MYSQL_SERVER"
         },
         {
@@ -2738,9 +2735,6 @@
         },
         {
           "name" : "PIG"
-        },
-        {
-          "name" : "ACCUMULO_MASTER"
         },
         {
           "name" : "MAPREDUCE2_CLIENT"
@@ -2781,9 +2775,6 @@
         },
         {
           "name" : "SUPERVISOR"
-        },
-        {
-          "name" : "ACCUMULO_TSERVER"
         }
       ],
       "configurations" : [ ],
@@ -2818,9 +2809,6 @@
         },
         {
           "name" : "SLIDER"
-        },
-        {
-          "name" : "ACCUMULO_CLIENT"
         },
         {
           "name" : "OOZIE_CLIENT"
@@ -2884,9 +2872,6 @@
     {
       "components" : [
         {
-          "name" : "ACCUMULO_MONITOR"
-        },
-        {
           "name" : "HDFS_CLIENT"
         },
         {
@@ -2894,9 +2879,6 @@
         },
         {
           "name" : "METRICS_MONITOR"
-        },
-        {
-          "name" : "ACCUMULO_GC"
         },
         {
           "name" : "HBASE_MASTER"

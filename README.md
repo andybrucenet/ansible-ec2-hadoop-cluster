@@ -25,7 +25,7 @@ Sample commands to build this environment (note you should create an SSH key fil
 # text values to feed to the process
 AWS_CREDENTIALS=~/.aws/credentials
 AWS_PEMKEY=[FULL_PATH_TO_CREATED_SSH_KEY_FILE]
-AWS_PEMKEYNAME='aws-hdp-testenv-key'
+AWS_PEMKEYNAME='aws-hdp-tclu'
 AWS_REGION='us-west-2'
 AWS_REGION_AZ='us-west-2b'
 AWS_VPC_NAME='lm-guest-env-01-vpc'
@@ -44,7 +44,7 @@ AWS_VPC_ID=$(aws-cli ec2 describe-vpcs --filter Name=tag:Name,Values=$AWS_VPC_NA
 AWS_IGW_ID=$(aws-cli ec2 describe-internet-gateways --filter Name=tag:Name,Values=$AWS_IGW_NAME --query 'InternetGateways[].InternetGatewayId' --output text | sed -e 's#\s##g')
 
 # PASSWORDs:
-# * Default is baked-in; see Ansible `variables.yml` and Ambaria blueprint
+# * Default is baked-in; see Ansible 'variables.yml' and Ambaria blueprint
 # * You can use a different password.
 # * Be sure you use the *same* password for the playbook / blueprint
 
@@ -90,11 +90,9 @@ Normal processing is to specify 2 data nodes initially, and 4 "extra" data nodes
 
    * While you are at it...login to the UI node via VNC. You can open Firefox and check out the status of the cluster install.
 <br />
-1. *Cluster Start*. Problems arise when I have the blueprint build and start the cluster. So, I have you do the actual cluster start manually.
-   * Wait for the cluster to build (normally less than 15 minutes)
-   * Under the `master1` node, disable the `Accumulo Tracer` (place it in Maintenance Mode). Otherwise, the initial cluster start sometimes blocks for a _long_ time.
-   * Select all hosts and start the cluster. Come back in 10 minutes and check.
-   * Under the `master1` node, enable the `Accumulo Tracer` and start it. Should take only a minute or so.
+1. *Cluster Start*. 
+   * Should start automatically (normally less than 15 minutes).
+   * Restart the data nodes (they will timeout waiting for the master nodes to install / start).
 <br />
 1. *Cluster Post-Process*.
    * After the cluster starts successfully, then execute the post-processing command emitted by the `start-here.sh` shell script above.
@@ -141,6 +139,34 @@ The point of this test cluster is to permit testing. Here is a sample script:
 
      If the candidate fails here...that's not a good sign.
 <br />
+1. *Hive and 'admin' User Home Directory*.
+   * Click on the 9 boxes control menu to get to Hive view.
+   * Service checks fail - missing 'admin' hdfs home.
+   * Run some variant of this fix:
+
+        ```
+        sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin; hdfs dfs -chown admin /user/admin'
+        ```
+
+<br />
+1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
+<br />
+1. *Add more Data Nodes*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
+   * Use the Add Host wizard.
+   * "Install Options" dialog
+     * Target Hosts: `extra1.aws-test.local` (that is the first data node). You can also add additional "extra" data nodes if they were created.
+     * Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
+   * "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
+   * "Assign Slaves and Clients". Use the same services as other Data Nodes (do not install the Client tools):
+     * DataNode
+     * NodeManager
+     * RegionServer
+     * Supervisor
+     * Accumulo
+   * The nodes will add, but will do so in a blocking (modal) browser window. Have the candidate open another Firefox tab and login to the cluster. You should see the background operation running. Have the candidate explain what is going on for the different jobs. How would a blocked job be handled?
+<br />
+1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
+<br />
 1. *Generate Initial Load*. We use the SWIM benchmark (https://github.com/SWIMProjectUCB/SWIM/wiki).
    * Interviewer logs into Tools node as `centos`
    * Invoke the SWIM wrapper (it should be in the home directory):
@@ -156,6 +182,7 @@ The point of this test cluster is to permit testing. Here is a sample script:
         ```
 
    * The above command does a lot of work; pulls down code and compiles, sets up folders in HDFS, creates test data (which itself generates load), and then runs the benchmarks that run lots of jobs in the background. You can quiz the Hadoop admin on:
+     * How well do Jobs Run?
      * Yarn Memory consumption (goes critical during the data generation phase)
      * Under-replicated blocks (goes critical under HDFS tab)
      * Here is some sample output from the build phase. Have the candidate explain it:
@@ -183,26 +210,18 @@ The point of this test cluster is to permit testing. Here is a sample script:
        rm -f /tmp/scriptsTest.log
        ```
 <br />
-1. *Block Replication Problem*. Have the candidate track this down. Easy way: Use HDFS Config UI, filter on "replication". The `Block Replication` is set to 3. Ask candidate why this is a problem?
-<br />
-1. *Add more Data Nodes*. During the Ambari cluster create, you specified the number of "extra" data nodes to create. These nodes are available and can be added to the cluster.
-   * Use the Add Host wizard.
-   * "Install Options" dialog
-     * Target Hosts: `extra1.aws-test.local` (that is the first data node). You can also add additional "extra" data nodes if they were created.
-     * Host Registration Information: The candidate must know that they paste the entire SSH key into the Host Registration Information textbox. You may share with the candidate that the `SSH User Account` is `centos`.
-   * "Confirm Hosts" dialog - Should report "Success" for registration and status checking.
-   * "Assign Slaves and Clients". Use the same services as other Data Nodes (do not install the Client tools):
-     * DataNode
-     * NodeManager
-     * RegionServer
-     * Supervisor
-     * Accumulo
-   * The nodes will add, but will do so in a blocking (modal) browser window. Have the candidate open another Firefox tab and login to the cluster. You should see the background operation running. Have the candidate explain what is going on for the different jobs. How would a blocked job be handled?
-<br />
-1. *Under Replication Goes Down*. Verify that - over time - the under replicated blocks go down. Have candidate explain why.
-<br />
 1. *Configuration Changes*. As deployed, there are various optimizations / restarts that can make the cluster go faster.
    * MapReduce2 - `Map Memory` and `AppMaster Memory` both can be bumped up to 2048MB. This in turn affects other parameters. Have the candidate explain why.
+
+## Work with Candidate - Tables and Backup
+
+1. Use case: Convert sample CSV to any kind of table?
+   * We did this through Hive
+   * Can be any kind of table.
+1. Ambari uses three databases (UMiami merged all into MySQL).
+   * Identify each database in use - Ambari (PostgreSQL?), Hive (MySQL), Oozie (Built-in), HBase (Built-in). Have a
+	 * What is the backup strategy to use?
+	 * How to test a restore?
 
 ## Work with Candidate - Load Testing
 

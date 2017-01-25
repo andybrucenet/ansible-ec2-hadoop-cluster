@@ -170,7 +170,7 @@ if echo "$g_pemkey_perms" | grep --quiet -e '^[46]\([1-9].\|.[1-9]\)'; then
   exit 1
 fi
 
-EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 'm3.large')
+EDGEINSTANCETYPE=$(read_entry 'Enter EDGE Instance Type' '' "$EDGEINSTANCETYPE" 'm3.xlarge')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
@@ -194,7 +194,7 @@ DATACOUNT=$(read_entry 'Enter DATA Node Count' '' "$DATACOUNT" '2')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
-EXTRACOUNT=$(read_entry 'Enter EXTRA DATA Node Count' '' "$EXTRACOUNT" '1')
+EXTRACOUNT=$(read_entry 'Enter EXTRA DATA Node Count' '' "$EXTRACOUNT" '4')
 g_rc=$?
 [ $g_rc -ne 0 ] && exit $g_rc
 
@@ -316,7 +316,7 @@ echo ANSIBLE_SUDO_FLAGS="'$l_ansible_sudo_flags'" \
 AWS_REGION=$AWS_REGION \
 AWS_REGION_AZ=$AWS_REGION_AZ \
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY \
 AWS_VPC_ID=$AWS_VPC_ID \
 AWS_SUBNET_RANGE=$AWS_SUBNET_RANGE \
 AWS_IGW_ID=$AWS_IGW_ID \

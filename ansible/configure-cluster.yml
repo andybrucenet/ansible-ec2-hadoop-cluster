@@ -96,6 +96,11 @@
       pkg: epel-release
       state: installed
 
+  - name: Install screen
+    yum:
+      pkg: screen
+      state: installed
+
 #
 # UI server
 - hosts: ui
@@ -125,10 +130,26 @@
       password: "{{ ui_password }}"
 
   - name: Restart UI server
-    shell: sleep 2 && shutdown -r now
+    shell: sleep 5 && shutdown -r now
     async: 1
     poll: 0
     ignore_errors: true
+
+#
+# Install R on first data node (for setting up failing test)
+- hosts: data1
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Install R
+    yum:
+      pkg: R
+      state: installed
 
 #
 # Wait for UI host to be available
@@ -138,7 +159,19 @@
 
   tasks:
   - name: Wait for UI server to restart
-    local_action: wait_for host={{ inventory_hostname }} port=22
+    local_action: wait_for host={{ inventory_hostname }} port=22 delay=30 timeout=300 connect_timeout=15
+
+- hosts: ui
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Copying PEM File to Instance for UI login user
+    copy: src="{{ pemkey }}" dest="/home/l.login/{{ pemkey_name }}" owner="l.login" mode=0400
 
 #
 # Ambari servers
@@ -156,7 +189,6 @@
       pkg: jq
       state: installed
 
-  # Install Oracle JDK
   - name: Download Oracle JDK
     shell: "wget --no-cookies --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' '{{ oracle_jdk_download }}' -O /opt/jdk-linux-x64.rpm"
     args:
@@ -164,6 +196,14 @@
 
   - name: Install Oracle JDK
     shell: yum localinstall -y /opt/jdk-linux-x64.rpm
+
+  - name: Pull stress test
+    shell: "wget --no-cookies --no-check-certificate '{{ stress_download }}' -O /opt/stress.rpm"
+    args:
+      creates: /opt/stress.rpm
+
+  - name: Install stress test
+    shell: yum localinstall -y /opt/stress.rpm
 
   - name: Write out alternatives file
     template: src=../templates/java_alternatives.j2 dest=/tmp/java_alternatives.sh
@@ -175,7 +215,7 @@
     shell: rm -f /usr/bin/jps  
 
   - name: Set jps in path
-    shell: ln -s `sudo find / -name jps | grep jdk` /usr/bin/jps  
+    shell: ln -s `sudo find / -name jps | grep jdk | tail -n 1` /usr/bin/jps  
 
   # Download/Install Ambari Repo and Agent    
   - name: Create Ambari Repo
