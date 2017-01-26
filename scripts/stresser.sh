@@ -25,12 +25,22 @@ while true ; do
 
     # recalc memory (in case we reaped any processes above)
     free_mb=$(free -m | grep -e '^Mem:' | awk '{print $7}')
-    [ $free_mb -gt $l_reference_mb ] && l_bytes=$l_reference_mb
-    [ $free_mb -le $l_reference_mb ] && l_bytes=$((free_mb - min_mb))
+    free_mb_avail=$((free_mb - min_mb))
+    if [ $free_mb_avail -gt 0 ]; then
+      [ $free_mb_avail -gt $l_reference_mb ] && l_bytes=$l_reference_mb
+      [ $free_mb_avail -le $l_reference_mb ] && l_bytes=$((free_mb_avail))
+    fi
 
     # fire away
     echo "  screen -d -m sudo stress --vm 1 --vm-bytes ${l_bytes}M --vm-keep"
     screen -d -m sudo stress --vm 1 --vm-bytes ${l_bytes}M --vm-keep && sleep 3
+	else
+    l_stress_procs=$(sudo ps -efa | grep SCREEN | grep stress | grep -v grep | wc -l)
+    while [ $l_stress_procs -gt $proc_count ]; do
+      l_stress_pid=$(sudo ps -efa | grep SCREEN | grep stress | grep -v grep | head -n 1 | awk '{print $2}')
+      [ x"$l_stress_pid" != x ] && echo "  Reaping stress PID $l_stress_pid..." && sudo kill $l_stress_pid && sleep 2
+      l_stress_procs=$(sudo ps -efa | grep SCREEN | grep stress | grep -v grep | wc -l)
+    done
   fi  
   sleep 5
 done

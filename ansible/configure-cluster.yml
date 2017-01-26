@@ -127,7 +127,7 @@
       name: l.login
       comment: "Login User"
       shell: /bin/bash
-      password: "{{ ui_password }}"
+      password: "{{ ui_password_login }}"
 
   - name: Restart UI server
     shell: sleep 5 && shutdown -r now
@@ -172,6 +172,14 @@
   tasks:
   - name: Copying PEM File to Instance for UI login user
     copy: src="{{ pemkey }}" dest="/home/l.login/{{ pemkey_name }}" owner="l.login" mode=0400
+
+  - name: VNC Server Setup Script
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
+    with_items:
+    - setup-vncserver.sh
+
+  - name: Ensure VNC Server is running
+    shell: ./setup-vncserver.sh l.login "{{ ui_password_vnc }}"
 
 #
 # Ambari servers

@@ -33,5 +33,6 @@ hdp_ambari_repo: "http://public-repo-1.hortonworks.com/ambari/centos7/2.x/update
 java_alternatives: "{{ lookup('file', '../scripts/java_alternatives.sh') }}"
 topfolder: "{{ lookup('env', 'TOPFOLDER') }}"
 blueprint: "{{ lookup('env', 'BLUEPRINT') }}"
-ui_password: $6$rounds=656000$SwuqI3UDH.2yfDGm$pTRXkFs1QHYgCJ4DzZGXEbHGhW41RkrVqVeOFP36EPIecU6K7d8WcPZApJVkoUN1/3b8zltGLWkokzXKuan1c.
+ui_password_login: $6$rounds=656000$SwuqI3UDH.2yfDGm$pTRXkFs1QHYgCJ4DzZGXEbHGhW41RkrVqVeOFP36EPIecU6K7d8WcPZApJVkoUN1/3b8zltGLWkokzXKuan1c.
+ui_password_vnc: 34ab12cd
 

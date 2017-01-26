@@ -68,27 +68,9 @@ Normal processing is to specify 2 data nodes initially, and 4 "extra" data nodes
 
 ## Post-Processing
 
-1. *UI Node Access*.
-   * Make sure that `vncserver` is executed as the `l.login` user on the UI node so that the candidate can login to the Ambari console. Here's a sample run:
-
-        ```
-        [centos@ip-172-20-242-22 ~]$ sudo su - l.login
-        [l.login@ip-172-20-242-22 ~]$ vncserver
-
-        You will require a password to access your desktops.
-
-        Password:
-        Verify:
-        xauth:  file /home/l.login/.Xauthority does not exist
-
-        New 'ip-172-20-242-22.us-west-2.compute.internal:1 (l.login)' desktop is ip-172-20-242-22.us-west-2.compute.internal:1
-
-        Creating default startup script /home/l.login/.vnc/xstartup
-        Starting applications specified in /home/l.login/.vnc/xstartup
-        Log file is /home/l.login/.vnc/ip-172-20-242-22.us-west-2.compute.internal:1.log
-        ```
-
-   * While you are at it...login to the UI node via VNC. You can open Firefox and check out the status of the cluster install.
+1. *UI Node Access*. You can login to the UI node via VNC.
+   * Use `[AWS_EC2_PUBLIC_IP]:5901` to access the server.
+   * Password is whatever was placed in the Ansible variables file
 <br />
 1. *Cluster Start*. 
    * Should start automatically (normally less than 15 minutes).

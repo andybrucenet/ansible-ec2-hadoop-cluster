@@ -5,7 +5,7 @@
   - "variables.yml"
   tasks: [ ]
 
-- hosts: edge
+- hosts: ui
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -14,8 +14,11 @@
   gather_facts: False
 
   tasks:
-  - name: Create Ambari cluster from blueprint
-    shell: sh -c "curl --silent -H 'X-Requested-By{{ ':' }} ambari' -X POST -u admin{{ ':' }}admin http{{ ':' }}//localhost{{ ':' }}8080/api/v1/clusters/{{ clustername }} -d@./{{ blueprint }}.map"
+  - name: VNC Server Setup Script
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
+    with_items:
+    - setup-vncserver.sh
 
-  - debug: msg="Ambari Server available at http://{{ inventory_hostname }}:8080"
+  - name: Ensure VNC Server is running
+    shell: ./setup-vncserver.sh l.login "{{ ui_password_vnc }}"
 
