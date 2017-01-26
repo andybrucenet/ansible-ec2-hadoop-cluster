@@ -68,9 +68,18 @@ Normal processing is to specify 2 data nodes initially, and 4 "extra" data nodes
 
 ## Post-Processing
 
-1. *UI Node Access*. You can login to the UI node via VNC.
-   * Use `[AWS_EC2_PUBLIC_IP]:5901` to access the server.
-   * Password is whatever was placed in the Ansible variables file
+1. *UI Node Access*. VNC is *not* started on the node.
+   * Login via SSH to the UI node.
+   * Start VNC:
+
+        ```
+        sudo su - l.login
+        vncserver
+        exit
+        ```
+
+   * Now you can access the UI node from VNC. Use `[AWS_EC2_PUBLIC_IP]:5901` to access the server.
+   * VNC password is whatever was placed in the Ansible variables file
 <br />
 1. *Cluster Start*. 
    * Should start automatically (normally less than 15 minutes).

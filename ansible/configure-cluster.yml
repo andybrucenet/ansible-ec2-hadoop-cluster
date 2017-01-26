@@ -129,7 +129,7 @@
       shell: /bin/bash
       password: "{{ ui_password_login }}"
 
-  - name: Restart UI server
+  - name: Restart UI server - first time
     shell: sleep 5 && shutdown -r now
     async: 1
     poll: 0
@@ -180,6 +180,12 @@
 
   - name: Ensure VNC Server is running
     shell: ./setup-vncserver.sh l.login "{{ ui_password_vnc }}"
+
+  - name: Restart UI server - second time
+    shell: sleep 5 && shutdown -r now
+    async: 1
+    poll: 0
+    ignore_errors: true
 
 #
 # Ambari servers

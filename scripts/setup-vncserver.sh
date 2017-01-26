@@ -30,7 +30,7 @@ if [ ! -d .vnc ]; then
 else
   # create password
   if [ ! -s .vnc/passwd ]; then
-    echo '$i_password' > .vnc/passwd
+    echo '$i_password' | vncpasswd -f > .vnc/passwd
     chmod 600 .vnc/passwd
   fi
   if [ ! -s .vnc/passwd ]; then
@@ -39,18 +39,18 @@ else
   fi
 fi
 
-# start vnc
-if [ \$l_rc -eq 0 ]; then
-  l_vncs=\$(ps -efa | grep -v grep | grep -e '$i_user' | grep -e Xvnc)
-  if [ x"\$l_vncs" != x ]; then
-    #echo "'\$l_vncs'" >> '$l_response_file'
-    echo "vnc already running" >> '$l_response_file'
-  else
-    echo "Starting vnc..." >> '$l_response_file'
-    vncserver >> '$l_response_file' 2>&1
-    l_rc=\$?
-  fi
-fi
+## start vnc
+#if [ \$l_rc -eq 0 ]; then
+#  l_vncs=\$(ps -efa | grep -v grep | grep -e '$i_user' | grep -e Xvnc)
+#  if [ x"\$l_vncs" != x ]; then
+#    #echo "'\$l_vncs'" >> '$l_response_file'
+#    echo "vnc already running" >> '$l_response_file'
+#  else
+#    echo "Starting vnc..." >> '$l_response_file'
+#    vncserver >> '$l_response_file' 2>&1
+#    l_rc=\$?
+#  fi
+#fi
 
 # command result
 echo \$l_rc >> '$l_rc_file'
