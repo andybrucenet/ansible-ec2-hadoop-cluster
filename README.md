@@ -197,7 +197,7 @@ R is installed only on the `tools1` and `data1` nodes by default. This allows us
    * Run the job. First, cleanup any existing output. Then, rerun the job:
 
         ```
-        hdfs dfs -rm -r - ./Rcount
+        hdfs dfs -rm -r ./Rcount
         hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
           -files ./mapper.R,./reducer.R \
           -mapper ./mapper.R -reducer ./reducer.R \
