@@ -209,6 +209,7 @@ R is installed only on the `tools1` and `data1` nodes by default. This allows us
       * The problem occurs because R is not installed on all data nodes.
       * The error will show up either under the Map or Reduce phases. Because R is installed on the `data1` node, the error may move around.
       * Goal is to have candidate knowledge of troubleshooting and log locations.
+      * Solution: Logon to `data2` node and use `sudo yum install -y R`. Then rerun job.
 
     ```
     sudo su - admin
