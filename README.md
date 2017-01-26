@@ -188,16 +188,16 @@ R is installed only on the `tools1` and `data1` nodes by default. This allows us
 <br />
 1. *Create R file and run failing jobs.* Use the following script; just paste it in. No need for the candidate to be involved.
 
-        ```
-        sudo su - admin
+    ```
+    sudo su - admin
 
-        echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
+    echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
 
-        hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
-          -files ./mapper.R,./reducer.R \
-          -mapper ./mapper.R -reducer ./reducer.R \
-          -input ./readme -output ./Rcount
-        ```
+    hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
+      -files ./mapper.R,./reducer.R \
+      -mapper ./mapper.R -reducer ./reducer.R \
+      -input ./readme -output ./Rcount
+    ```
 
 ## Work with Candidate - Block Replication and Add Nodes
 
