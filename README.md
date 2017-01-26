@@ -187,6 +187,28 @@ R is installed only on the `tools1` and `data1` nodes by default. This allows us
 1. *Connect*. 
 <br />
 1. *Create R file and run failing jobs.* Use the following script; just paste it in. No need for the candidate to be involved.
+   * Login to `tools1` node and become `admin` user.
+   * Construct the input file:
+
+        ```
+        echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
+        ```
+
+   * Run the job. First, cleanup any existing output. Then, rerun the job:
+
+        ```
+        hdfs dfs -rm -r - ./Rcount
+        hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
+          -files ./mapper.R,./reducer.R \
+          -mapper ./mapper.R -reducer ./reducer.R \
+          -input ./readme -output ./Rcount
+        ```
+
+    * The job fails. Have the candidate discover why. You may show output from the terminal, but the candidate should know to go to Job History UI under MapReduce.
+      * The problem is `/usr/bin/env: Rscript: No such file or directory`
+      * The problem occurs because R is not installed on all data nodes.
+      * The error will show up either under the Map or Reduce phases. Because R is installed on the `data1` node, the error may move around.
+      * Goal is to have candidate knowledge of troubleshooting and log locations.
 
     ```
     sudo su - admin
