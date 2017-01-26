@@ -119,28 +119,51 @@ The point of this test cluster is to permit testing. Here is a sample script:
         http://edge.aws-test.local:8080
         ```
 
-1. *SSH Login*. You should have generated an SSH key during cluster creation.
-   * Share the private key with the candidate.
-   * The candidate should know that the full key (including comments) must be pasted to a local text file.
-   * The candidate should know that permissions must be no more than `0600` on the local text file.
-   * The candidate must be able to login to any of the running nodes as the `centos` user.
+1. *SSH Login*. The candidate will use the VNC console for terminal / SSH work.
+   * The candidate opens a terminal within VNC.
+   * The candidate can open an SSH terminal to *any host* by using:
 
         ```
-        ssh -i [FULL_PATH_TO_LOCAL_KEY_FILE] centos@[AWS_EC2_DNS_NAME]
+        ssh -i ./aws-hdp-tclu centos@[INTERNAL_HOST_NAME]
+        ```
+
+   * The candidate can find the internal hostnames from `cat /etc/hosts`
+   * You may instruct the candidate to use the following to open an SSH terminal to the `tools1` node:
+
+        ```
+        ssh -i ./aws-hdp-tclu centos@tools1.aws-test.local
         ```
 
      If the candidate fails here...that's not a good sign.
-<br />
+
+## Work with Candidate - Hive and External Tables
+
 1. *Hive and 'admin' User Home Directory*.
    * Click on the 9 boxes control menu to get to Hive view.
    * Service checks fail - missing 'admin' hdfs home.
-   * Run some variant of this fix:
+   * Run some variant of this fix (requires SSH terminal to `tools1` node):
 
         ```
+        sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin
+        hdfs dfs -chown admin /user/admin'
+        ```
+
+     The key is that the candidate must understand that it is necessary to use the `hdfs` user to create this folder and assign privileges. If they understand that requirement, you may assist with the specific Linux commands (e.g. `sudo`) to become the `hdfs` super-user.
+
+<br />
+1. *Hive Table*. See https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_dataintegration/content/moving_data_from_hdfs_to_hive_external_table_method.html for details
+   * Candidate must open Terminal on VNC session
+   * Candidate must load `cars.csv` into HDFS. **Note**: This file contains a header line, which must be removed prior to loading. Look for some variant on the following:
+
+        ```
+        # get rid of header
+        tail -n +2 cars.csv > cars-data.csv
+        # 
         sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin; hdfs dfs -chown admin /user/admin'
         ```
 
-## Work with Candidate - Tables and Backup
+
+
 
 1. Use case: Convert sample CSV to any kind of table?
    * We did this through Hive

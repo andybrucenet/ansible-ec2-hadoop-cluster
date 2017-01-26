@@ -12,6 +12,20 @@
     with_items:
     - stresser.sh
 
+- hosts: ui
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Copying scripts
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/l.login/{{ item }}" owner=l.login mode=0440
+    with_items:
+    - cars.csv
+
 - hosts: tools
   user: "{{ ssh_login }}"
   become: true
