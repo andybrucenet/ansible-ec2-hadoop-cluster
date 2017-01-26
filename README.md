@@ -194,33 +194,23 @@ R is installed only on the `tools1` and `data1` nodes by default. This allows us
         echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
         ```
 
-   * Run the job. First, cleanup any existing output. Then, rerun the job:
+   * Run the job. The following does cleanup (ignore errors) and then runs R.
 
         ```
         hdfs dfs -rm -r ./Rcount
+
         hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
           -files ./mapper.R,./reducer.R \
           -mapper ./mapper.R -reducer ./reducer.R \
           -input ./readme -output ./Rcount
         ```
 
-    * The job fails. Have the candidate discover why. You may show output from the terminal, but the candidate should know to go to Job History UI under MapReduce.
-      * The problem is `/usr/bin/env: Rscript: No such file or directory`
-      * The problem occurs because R is not installed on all data nodes.
-      * The error will show up either under the Map or Reduce phases. Because R is installed on the `data1` node, the error may move around.
-      * Goal is to have candidate knowledge of troubleshooting and log locations.
-      * Solution: Logon to `data2` node and use `sudo yum install -y R`. Then rerun job.
-
-    ```
-    sudo su - admin
-
-    echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
-
-    hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
-      -files ./mapper.R,./reducer.R \
-      -mapper ./mapper.R -reducer ./reducer.R \
-      -input ./readme -output ./Rcount
-    ```
+1. *Troubleshoot.* The job fails. Have the candidate discover why. You may show output from the terminal, but the candidate should know to go to Job History UI under MapReduce.
+   * The problem is `/usr/bin/env: Rscript: No such file or directory`
+   * The problem occurs because R is not installed on all data nodes.
+   * The error will show up either under the Map or Reduce phases. Because R is installed on the `data1` node, the error may move around.
+   * Goal is to have candidate knowledge of troubleshooting and log locations.
+   * Solution: Logon to `data2` node and use `sudo yum install -y R`. Then rerun job.
 
 ## Work with Candidate - Block Replication and Add Nodes
 
