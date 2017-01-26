@@ -132,46 +132,72 @@ The point of this test cluster is to permit testing. Here is a sample script:
 
         ```
         ssh -i ./aws-hdp-tclu centos@tools1.aws-test.local
+        sudo su - admin
         ```
 
      If the candidate fails here...that's not a good sign.
 
-## Work with Candidate - Hive and External Tables
+## Work with Candidate - Hive, CSV Tables, Internal Databases
 
 1. *Hive and 'admin' User Home Directory*.
    * Click on the 9 boxes control menu to get to Hive view.
    * Service checks fail - missing 'admin' hdfs home.
-   * Run some variant of this fix (requires SSH terminal to `tools1` node):
+   * Run some variant of this fix (requires SSH terminal to `tools1` node as shown above):
 
         ```
-        sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin
-        hdfs dfs -chown admin /user/admin'
-        ```
-
-     The key is that the candidate must understand that it is necessary to use the `hdfs` user to create this folder and assign privileges. If they understand that requirement, you may assist with the specific Linux commands (e.g. `sudo`) to become the `hdfs` super-user.
-
-<br />
-1. *Hive Table*. See https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_dataintegration/content/moving_data_from_hdfs_to_hive_external_table_method.html for details
-   * Candidate must open Terminal on VNC session
-   * Candidate must load `cars.csv` into HDFS. **Note**: This file contains a header line, which must be removed prior to loading. Look for some variant on the following:
-
-        ```
-        # get rid of header
-        tail -n +2 cars.csv > cars-data.csv
-        # 
         sudo su - hdfs -c 'hdfs dfs -mkdir /user/admin; hdfs dfs -chown admin /user/admin'
         ```
 
+     The key is that the candidate must understand that it is necessary to use the `hdfs` user to create this folder and assign privileges. If they understand that requirement, you may assist with the specific Linux commands (e.g. `sudo`) to become the `hdfs` super-user.
+<br />
+1. *Hive Table from CSV*. See https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_dataintegration/content/moving_data_from_hdfs_to_hive_external_table_method.html for details
+   * Requires SSH terminal to `tools1` node and loose permissions on HDFS for the `admin` node.
+   * Candidate must load `cars.csv` into HDFS. They may use either the Hive UI or raw commands.
+   * Candidate must use the following schema:
 
+        ```
+        Name STRING, 
+        MPG DOUBLE,
+        Cylinders INT,
+        Displacement INT,
+        Horsepower INT, 
+        Weight INT,
+        Accelerate DOUBLE,
+        Year DATE,
+        Origin CHAR(1)
+        ```
+    * Candidate must show all columns from first three rows of the table:
 
+        ```
+        select * from cars limit 3;
+        ```
 
-1. Use case: Convert sample CSV to any kind of table?
-   * We did this through Hive
-   * Can be any kind of table.
-1. Ambari uses three databases (UMiami merged all into MySQL).
-   * Identify each database in use - Ambari (PostgreSQL?), Hive (MySQL), Oozie (Built-in), HBase (Built-in). Have a
-   * What is the backup strategy to use?
-   * How to test a restore?
+1. *Ambari Database Usage*. See https://community.hortonworks.com/questions/32775/how-to-find-the-database-used-by-ambari-hive-metas.html
+   * Ambari Database - Answer is `PostgreSQL`. Candidate can reference either `/etc/ambari-server/conf/ambari.properties` on the Ambari host (`edge.aws-test.local`) or use the REST API `http://edge.aws-test.local:8080/api/v1/services/AMBARI/components/AMBARI_SERVER?fields=RootServiceComponents/properties/server.jdbc.database`. If they use the REST API, we should probably hire immediately.
+   * Hive Database - Answer is `MySQL`. See Ambari -> Hive -> Configs and search for `database`.
+   * Oozie Database - Answer is `Derby`. See Ambari -> Oozie -> Configs and search for `database`.
+   * *Ranger Database* - Answer is 'Not Installed'. Ask the candidate what they would use Ranger for. See 
+   * *Backup* - How does candidate recommend we backup our cluster databases? See https://docs.hortonworks.com/HDPDocuments/Ambari-2.1.2.1/bk_upgrading_Ambari/content/_perform_backups_mamiu.html for a discussion.
+   *Upgrades*. The candidate should discuss basic upgrade options.
+
+## Work with Candidate - Troubleshooting R
+
+R is installed only on the `tools1` and `data1` nodes by default. This allows us to setup a very nice problem.
+
+1. *Connect*. 
+<br />
+1. *Create R file and run failing jobs.* Use the following script; just paste it in. No need for the candidate to be involved.
+
+        ```
+        sudo su - admin
+
+        echo "foo foo quux labs foo bar quux" | hdfs dfs -copyFromLocal -f - ./readme
+
+        hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
+          -files ./mapper.R,./reducer.R \
+          -mapper ./mapper.R -reducer ./reducer.R \
+          -input ./readme -output ./Rcount
+        ```
 
 ## Work with Candidate - Block Replication and Add Nodes
 

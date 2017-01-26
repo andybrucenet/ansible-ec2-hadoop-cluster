@@ -5,7 +5,9 @@
   - "variables.yml"
   tasks: [ ]
 
-- hosts: ui
+#
+# Create 'admin' user on tools node
+- hosts: tools
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -14,11 +16,25 @@
   gather_facts: False
 
   tasks:
-  - name: VNC Server Setup Script
-    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
-    with_items:
-    - setup-vncserver.sh
+  - name: Create admin user (no password)
+    user:
+      name: admin
+      comment: "Ambari Admin User"
+      shell: /bin/bash
 
-  - name: Ensure VNC Server is running
-    shell: ./setup-vncserver.sh l.login "{{ ui_password_vnc }}"
+- hosts: tools
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Copying helper scripts for admin
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/admin/{{ item }}" owner=admin mode=0550
+    with_items:
+    - mapper.R
+    - reducer.R
+    - cars.csv
 

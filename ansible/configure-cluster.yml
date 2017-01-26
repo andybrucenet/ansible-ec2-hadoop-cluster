@@ -129,15 +129,15 @@
       shell: /bin/bash
       password: "{{ ui_password_login }}"
 
-  - name: Restart UI server - first time
+  - name: Restart UI server
     shell: sleep 5 && shutdown -r now
     async: 1
     poll: 0
     ignore_errors: true
 
 #
-# Install R on first data node (for setting up failing test)
-- hosts: data1
+# Install R on first data and all tools nodes (for setting up failing test)
+- hosts: data1:tools
   user: "{{ ssh_login }}"
   become: true
   become_method: sudo
@@ -181,11 +181,22 @@
   - name: Ensure VNC Server is running
     shell: ./setup-vncserver.sh l.login "{{ ui_password_vnc }}"
 
-  - name: Restart UI server - second time
-    shell: sleep 5 && shutdown -r now
-    async: 1
-    poll: 0
-    ignore_errors: true
+#
+# Create 'admin' user on tools nodes
+- hosts: tools
+  user: "{{ ssh_login }}"
+  become: true
+  become_method: sudo
+  vars_files:
+  - "variables.yml"
+  gather_facts: False
+
+  tasks:
+  - name: Create admin user (no password)
+    user:
+      name: admin
+      comment: "Ambari Admin User"
+      shell: /bin/bash
 
 #
 # Ambari servers

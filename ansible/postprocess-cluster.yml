@@ -21,8 +21,8 @@
   gather_facts: False
 
   tasks:
-  - name: Copying scripts
-    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/l.login/{{ item }}" owner=l.login mode=0440
+  - name: Copying helper scripts for l.login
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/{{ ssh_login }}/{{ item }}" owner="{{ ssh_login }}" mode=0550
     with_items:
     - cars.csv
 
@@ -43,6 +43,14 @@
     - swim-integration.sh
     - mapper.R
     - reducer.R
+    - cars.csv
+
+  - name: Copying helper scripts for admin
+    copy: src="{{ topfolder }}/scripts/{{ item }}" dest="/home/admin/{{ item }}" owner=admin mode=0550
+    with_items:
+    - mapper.R
+    - reducer.R
+    - cars.csv
 
 - hosts: master2
   user: "{{ ssh_login }}"
